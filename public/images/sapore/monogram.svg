@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="SAPORÉ monogram">
+  <circle cx="58" cy="62" r="46" fill="#0f2341"/>
+  <circle cx="58" cy="62" r="46" fill="none" stroke="#c26944" stroke-width="5"/>
+  <text x="58" y="79" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="52" font-weight="700" fill="#faf7f2">S</text>
+  <path d="M92 12c10 2.5 16 9 17 19-10.5-1-17.3-7.5-17-19z" fill="#78907e"/>
+</svg>

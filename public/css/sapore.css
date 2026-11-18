@@ -1,0 +1,253 @@
+/*
+ * Tema SAPORÉ untuk Filament v3 (mode terang saja; panel memakai ->darkMode(false)).
+ * Palet dari Visual Brief: krem hangat + navy dalam + aksen terracotta, hindari putih murni.
+ * Warna tombol/badge/aksen diatur lewat ->colors() di AdminPanelProvider (App\Support\SaporePalette);
+ * file ini hanya untuk hal yang tidak bisa diatur lewat palet: sidebar navy, header tabel, kartu, login.
+ * Bila setelah update Filament tampilan bergeser, periksa nama kelas .fi-* di bawah dengan Inspect Element.
+ */
+:root {
+    --sp-navy-dark: #0f2341;
+    --sp-navy: #1a365d;
+    --sp-terracotta: #c26944;
+    --sp-sage: #78907e;
+    --sp-cream: #faf7f2;
+    --sp-card: #fffdfa;
+    --sp-line: #e6dfd3;
+    --sp-text: #232d37;
+    --sp-muted: #64707d;
+    --sp-serif: Georgia, 'Times New Roman', serif;
+}
+
+/* ---------- Latar & kartu ---------- */
+body.fi-body,
+.fi-main-ctn {
+    background-color: var(--sp-cream);
+}
+
+.fi-section,
+.fi-ta-ctn,
+.fi-wi-stats-overview-stat,
+.fi-fo-repeater-item,
+.fi-dropdown-panel,
+.fi-modal-window,
+.fi-no-notification,
+.fi-simple-main {
+    background-color: var(--sp-card);
+}
+
+.fi-section,
+.fi-ta-ctn,
+.fi-wi-stats-overview-stat {
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(15, 35, 65, 0.06);
+}
+
+.fi-input-wrp,
+.fi-fo-select .fi-input-wrp {
+    background-color: var(--sp-card);
+}
+
+/* ---------- Judul halaman ---------- */
+.fi-header-heading {
+    font-family: var(--sp-serif);
+    color: var(--sp-navy-dark);
+    letter-spacing: 0.01em;
+}
+
+.fi-header-subheading {
+    color: var(--sp-muted);
+}
+
+.fi-section-header-heading {
+    color: var(--sp-navy-dark);
+}
+
+/* ---------- Sidebar navy ---------- */
+.fi-sidebar {
+    background-color: var(--sp-navy-dark);
+    border-right: 0;
+}
+
+.fi-sidebar-header {
+    background-color: var(--sp-navy-dark) !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid rgba(250, 247, 242, 0.08);
+}
+
+.fi-sidebar-nav {
+    scrollbar-color: rgba(250, 247, 242, 0.25) transparent;
+}
+
+.fi-sidebar-group-label {
+    color: rgba(250, 247, 242, 0.5) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+}
+
+.fi-sidebar-group-collapse-button,
+.fi-sidebar-group-collapse-button svg {
+    color: rgba(250, 247, 242, 0.5) !important;
+}
+
+.fi-sidebar-item-button {
+    color: rgba(250, 247, 242, 0.84) !important;
+    border-radius: 10px;
+}
+
+.fi-sidebar-item-button:hover,
+.fi-sidebar-item-button:focus-visible {
+    background-color: rgba(250, 247, 242, 0.07) !important;
+}
+
+.fi-sidebar-item-label {
+    color: inherit !important;
+}
+
+.fi-sidebar-item-icon {
+    color: rgba(250, 247, 242, 0.6) !important;
+}
+
+/* item aktif: panel navy lebih terang + garis terracotta di kiri (seperti mockup) */
+.fi-sidebar-item-active > .fi-sidebar-item-button,
+.fi-sidebar-item.fi-active > .fi-sidebar-item-button {
+    background-color: var(--sp-navy) !important;
+    box-shadow: inset 3px 0 0 var(--sp-terracotta);
+    color: #ffffff !important;
+}
+
+.fi-sidebar-item-active .fi-sidebar-item-icon,
+.fi-sidebar-item.fi-active .fi-sidebar-item-icon {
+    color: var(--sp-terracotta) !important;
+}
+
+.fi-sidebar-collapse-button,
+.fi-sidebar-open-collapse-sidebar-btn,
+.fi-sidebar-close-collapse-sidebar-btn {
+    color: rgba(250, 247, 242, 0.7) !important;
+}
+
+/* ---------- Topbar ---------- */
+.fi-topbar > nav {
+    background-color: var(--sp-card) !important;
+    box-shadow: 0 1px 0 var(--sp-line);
+}
+
+.sp-user-context {
+    font-size: 0.8rem;
+    color: var(--sp-muted);
+    white-space: nowrap;
+    margin-right: 0.75rem;
+}
+
+@media (max-width: 640px) {
+    .sp-user-context {
+        display: none;
+    }
+}
+
+/* ---------- Logo: warna teks menurut lokasi ---------- */
+.sp-logo-text { fill: var(--sp-navy-dark); }
+.sp-logo-sub { fill: var(--sp-muted); }
+.sp-logo-disc { fill: var(--sp-navy-dark); }
+
+.fi-sidebar .sp-logo-text,
+.fi-simple-layout .sp-logo-text { fill: var(--sp-cream); }
+.fi-sidebar .sp-logo-sub,
+.fi-simple-layout .sp-logo-sub { fill: #c9c2b6; }
+.fi-sidebar .sp-logo-disc,
+.fi-simple-layout .sp-logo-disc { fill: var(--sp-navy); }
+
+/* ---------- Tabel: header navy + baris selang-seling krem ---------- */
+.fi-ta-table > thead {
+    background-color: var(--sp-navy-dark) !important;
+}
+
+.fi-ta-table > thead > tr {
+    background-color: var(--sp-navy-dark) !important;
+}
+
+.fi-ta-table > thead th,
+.fi-ta-header-cell,
+.fi-ta-header-cell-label,
+.fi-ta-header-cell button,
+.fi-ta-header-cell button span {
+    color: #ffffff !important;
+}
+
+.fi-ta-header-cell svg {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.fi-ta-table > tbody > tr:nth-child(even) {
+    background-color: rgba(239, 234, 227, 0.55);
+}
+
+.fi-ta-table > tbody > tr:hover {
+    background-color: rgba(194, 105, 68, 0.07);
+}
+
+.fi-ta-text-item-label {
+    color: var(--sp-text);
+}
+
+/* ---------- Kartu statistik dashboard: aksen warna di kiri ---------- */
+.fi-wi-stats-overview-stat {
+    border-left: 4px solid var(--sp-terracotta);
+    overflow: hidden;
+}
+
+.fi-wi-stats-overview-stat:nth-child(2) { border-left-color: var(--sp-sage); }
+.fi-wi-stats-overview-stat:nth-child(3) { border-left-color: var(--sp-terracotta); }
+.fi-wi-stats-overview-stat:nth-child(4) { border-left-color: var(--sp-navy); }
+
+.fi-wi-stats-overview-stat-value {
+    font-family: var(--sp-serif);
+    color: var(--sp-navy-dark);
+}
+
+.fi-wi-stats-overview-stat-label {
+    color: var(--sp-muted);
+}
+
+/* ---------- Tombol & form ---------- */
+.fi-btn {
+    border-radius: 10px;
+}
+
+.fi-input-wrp {
+    border-radius: 10px;
+}
+
+/* ---------- Halaman login: latar navy, kartu krem ---------- */
+.fi-simple-layout {
+    background: radial-gradient(1200px 600px at 20% -10%, #1a365d 0%, #0f2341 55%, #0a182d 100%);
+}
+
+.fi-simple-main {
+    border-radius: 18px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.fi-simple-header-heading {
+    font-family: var(--sp-serif);
+    color: var(--sp-navy-dark);
+}
+
+.fi-simple-header .fi-logo,
+.fi-simple-layout .fi-logo {
+    height: 3rem !important;
+}
+
+/* ---------- Cetak (laporan): hilangkan sidebar & topbar ---------- */
+@media print {
+    .fi-sidebar,
+    .fi-topbar,
+    .fi-header-actions-ctn {
+        display: none !important;
+    }
+    body.fi-body,
+    .fi-main-ctn {
+        background: #ffffff;
+    }
+}

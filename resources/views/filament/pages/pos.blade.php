@@ -77,6 +77,15 @@
                 </select>
             </div>
 
+            @if (! empty($this->branchChoices()))
+                <select class="sp-input" wire:model="branchId" style="margin-bottom:8px">
+                    <option value="">Pilih cabang…</option>
+                    @foreach ($this->branchChoices() as $id => $name)
+                        <option value="{{ $id }}">{{ $name }}</option>
+                    @endforeach
+                </select>
+            @endif
+
             @forelse ($sum['lines'] as $line)
                 @php $key = $line['type'] . ':' . $line['id']; @endphp
                 <div class="sp-row">

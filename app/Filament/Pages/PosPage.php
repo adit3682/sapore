@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Branch;
+use App\Support\Access;
 use App\Enums\OrderStatus;
 use App\Models\Category;
 use App\Models\Menu;
@@ -49,6 +51,9 @@ class PosPage extends Page
 
     public ?int $orderId = null;
 
+    /** Cabang transaksi. Akun cabang: terkunci ke cabangnya; akun pusat (Owner): memilih. */
+    public ?int $branchId = null;
+
     public static function canAccess(): bool
     {
         return app(OrderService::class)->canSell(auth()->user());
@@ -57,10 +62,15 @@ class PosPage extends Page
     /** Lanjutkan order tersimpan: /admin/kasir?order=ID */
     public function mount(): void
     {
+        $scope = Access::branchScope(auth()->user());
+        $this->branchId = $scope;
+
         if ($id = request()->query('order')) {
-            $order = Order::with('items')->where('status', OrderStatus::Open->value)->find($id);
+            $order = Order::with('items')->where('status', OrderStatus::Open->value)
+                ->when($scope !== null, fn ($q) => $q->where('branch_id', $scope))->find($id);
             if ($order) {
                 $this->orderId = $order->id;
+                $this->branchId = $order->branch_id;
                 $this->tableLabel = (string) $order->table_label;
                 $this->orderType = $order->order_type;
                 foreach ($order->items as $i) {
@@ -68,6 +78,12 @@ class PosPage extends Page
                 }
             }
         }
+    }
+
+    /** Pilihan cabang untuk akun pusat; kosong untuk akun cabang (terkunci). */
+    public function branchChoices(): array
+    {
+        return Access::isCentral(auth()->user()) ? Branch::where('is_active', true)->orderBy('name')->pluck('name', 'id')->all() : [];
     }
 
     /** @return array<int, array{key: string, label: string}> */
@@ -90,8 +106,8 @@ class PosPage extends Page
 
         if ($this->category !== 'package') {
             $menus = Menu::with('category')->where('is_active', true)
-                ->when(ctype_digit($this->category), fn ($query) => $query->where('category_id', (int) $this->category))
-                ->when($needle !== '', fn ($query) => $query->where('name', 'like', "%{$needle}%"))
+                ->when(ctype_digit($this->category), fn ($q) => $q->where('category_id', (int) $this->category))
+                ->when($needle !== '', fn ($q) => $q->where('name', 'like', "%{$needle}%"))
                 ->orderBy('name')->get();
             foreach ($menus as $m) {
                 $items[] = ['type' => 'menu', 'id' => $m->id, 'name' => $m->name, 'price' => (string) $m->selling_price, 'tag' => $m->category?->name ?? 'Menu'];
@@ -100,7 +116,7 @@ class PosPage extends Page
 
         if ($this->category === 'all' || $this->category === 'package') {
             $packages = Package::where('is_active', true)
-                ->when($needle !== '', fn ($query) => $query->where('name', 'like', "%{$needle}%"))
+                ->when($needle !== '', fn ($q) => $q->where('name', 'like', "%{$needle}%"))
                 ->orderBy('name')->get();
             foreach ($packages as $p) {
                 $items[] = ['type' => 'package', 'id' => $p->id, 'name' => $p->name, 'price' => (string) $p->selling_price, 'tag' => 'Paket'];
@@ -210,9 +226,14 @@ class PosPage extends Page
     {
         $service = app(OrderService::class);
         $lines = array_values($this->cart);
-        $header = ['order_type' => $this->orderType, 'table_label' => $this->tableLabel !== '' ? $this->tableLabel : null];
+        $scope = Access::branchScope(auth()->user());
+        $header = [
+            'order_type' => $this->orderType,
+            'table_label' => $this->tableLabel !== '' ? $this->tableLabel : null,
+            'branch_id' => $this->branchId,
+        ];
 
-        if ($this->orderId && ($existing = Order::find($this->orderId))) {
+        if ($this->orderId && ($existing = Order::when($scope !== null, fn ($q) => $q->where('branch_id', $scope))->find($this->orderId))) {
             return $service->replaceItems($existing, $lines, $header);
         }
 

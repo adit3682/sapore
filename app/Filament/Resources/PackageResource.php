@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources;
 
+use App\Support\Access;
+use App\Filament\Support\ChecksAccess;
 use App\Filament\Resources\PackageResource\Pages;
 use App\Models\Menu;
 use App\Models\Package;
@@ -17,6 +19,10 @@ use Illuminate\Support\HtmlString;
 
 class PackageResource extends Resource
 {
+    use ChecksAccess;
+
+    protected static string $accessKey = 'menus';
+
     protected static ?string $model = Package::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-gift';
@@ -74,11 +80,12 @@ class PackageResource extends Resource
                     ->formatStateUsing(fn ($state) => RecipeCostService::rupiah($state)),
                 Tables\Columns\TextColumn::make('margin')->label('Margin')
                     ->state(function (Package $r) use ($cost) {
-                        $s = $cost->summarize($cost->packageCost($r), $r->selling_price);
+                        $state = $cost->summarize($cost->packageCost($r), $r->selling_price);
 
-                        return RecipeCostService::rupiah($s['margin']).($s['margin_pct'] !== null ? " ({$s['margin_pct']}%)" : '');
+                        return RecipeCostService::rupiah($state['margin']).($state['margin_pct'] !== null ? " ({$state['margin_pct']}%)" : '');
                     }),
-                Tables\Columns\ToggleColumn::make('is_active')->label('Aktif'),
+                Tables\Columns\ToggleColumn::make('is_active')->label('Aktif')
+                    ->disabled(fn () => ! Access::can(auth()->user(), 'menus', 'update')),
             ])
             ->actions([Tables\Actions\EditAction::make()])
             ->defaultSort('code');
@@ -110,21 +117,21 @@ class PackageResource extends Resource
             }
         }
 
-        $s = $svc->summarize($total, $get('selling_price'));
-        $good = bccomp($s['margin'], '0', 2) >= 0;
+        $state = $svc->summarize($total, $get('selling_price'));
+        $good = bccomp($state['margin'], '0', 2) >= 0;
 
         $html = '<div style="display:flex;gap:12px;flex-wrap:wrap">'
             .'<div style="flex:1;min-width:170px;padding:12px 16px;background:#efeae3;border-left:4px solid #1a365d;border-radius:8px">'
             .'<div style="font-size:12px;color:#64707d">HPP Paket</div><div style="font-size:20px;font-weight:700">'
-            .e(RecipeCostService::rupiah($s['cost'])).'</div></div>';
+            .e(RecipeCostService::rupiah($state['cost'])).'</div></div>';
 
-        if ($s['margin_pct'] !== null) {
+        if ($state['margin_pct'] !== null) {
             $html .= '<div style="flex:1;min-width:170px;padding:12px 16px;background:#efeae3;border-left:4px solid #c26944;border-radius:8px">'
-                .'<div style="font-size:12px;color:#64707d">Food Cost</div><div style="font-size:20px;font-weight:700">'.e($s['food_cost_pct']).'%</div></div>'
+                .'<div style="font-size:12px;color:#64707d">Food Cost</div><div style="font-size:20px;font-weight:700">'.e($state['food_cost_pct']).'%</div></div>'
                 .'<div style="flex:1;min-width:200px;padding:12px 16px;border-radius:8px;background:'.($good ? '#e6f2ea' : '#f8e4e1').'">'
                 .'<div style="font-size:12px;color:#64707d">Estimasi Margin Kotor</div>'
                 .'<div style="font-size:20px;font-weight:700;color:'.($good ? '#3f7a55' : '#b94a48').'">'
-                .e(RecipeCostService::rupiah($s['margin'])).' ('.e($s['margin_pct']).'%)</div></div>';
+                .e(RecipeCostService::rupiah($state['margin'])).' ('.e($state['margin_pct']).'%)</div></div>';
         }
 
         return new HtmlString($html.'</div>');

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Support;
 
+use App\Support\Access;
 use App\Enums\Role;
 use App\Models\Branch;
 use App\Services\ReportExporter;
@@ -48,7 +49,7 @@ abstract class ReportPage extends Page
         $this->form->fill([
             'from' => now()->startOfMonth()->toDateString(),
             'to' => today()->toDateString(),
-            'branch_id' => auth()->user()?->branch_id,
+            'branch_id' => Access::branchScope(auth()->user()),
             'lookback' => 14,
             'horizon' => 7,
         ]);
@@ -67,8 +68,9 @@ abstract class ReportPage extends Page
     protected function branchField(): Forms\Components\Select
     {
         return Forms\Components\Select::make('branch_id')->label('Cabang')
-            ->options(fn () => Branch::orderBy('name')->pluck('name', 'id'))
-            ->placeholder('Semua cabang')->live();
+            ->options(fn () => Access::branchOptions(auth()->user()))
+            ->placeholder('Semua cabang')->live()
+            ->disabled(fn () => Access::branchScope(auth()->user()) !== null)->dehydrated();
     }
 
     public function form(Form $form): Form
@@ -106,7 +108,8 @@ abstract class ReportPage extends Page
         return [
             'from' => Carbon::parse($d['from'] ?? now()->startOfMonth())->startOfDay(),
             'to' => Carbon::parse($d['to'] ?? today())->endOfDay(),
-            'branch_id' => filled($d['branch_id'] ?? null) ? (int) $d['branch_id'] : null,
+            // akun cabang selalu terkunci ke cabangnya, apa pun isi form (state Livewire bisa diubah klien)
+            'branch_id' => Access::branchScope(auth()->user()) ?? (filled($d['branch_id'] ?? null) ? (int) $d['branch_id'] : null),
             'lookback' => (int) ($d['lookback'] ?? 14),
             'horizon' => (int) ($d['horizon'] ?? 7),
         ];

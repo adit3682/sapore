@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Support\Access;
+use App\Filament\Support\ScopesToBranch;
+use App\Filament\Support\ChecksAccess;
 use App\Enums\StockOpnameStatus;
 use App\Filament\Resources\StockOpnameResource\Pages;
 use App\Filament\Resources\StockOpnameResource\RelationManagers\ItemsRelationManager;
@@ -17,6 +20,10 @@ use Filament\Tables\Table;
 
 class StockOpnameResource extends Resource
 {
+    use ChecksAccess, ScopesToBranch;
+
+    protected static string $accessKey = 'stock_opnames';
+
     protected static ?string $model = StockOpname::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
@@ -38,7 +45,7 @@ class StockOpnameResource extends Resource
 
     public static function canEdit($record): bool
     {
-        return $record->status === StockOpnameStatus::Draft;
+        return Access::can(auth()->user(), 'stock_opnames', 'update') && $record->status === StockOpnameStatus::Draft;
     }
 
     public static function canDelete($record): bool
@@ -51,9 +58,9 @@ class StockOpnameResource extends Resource
         return $form->schema([
             Forms\Components\Section::make('Stock Opname')->schema([
                 Forms\Components\Select::make('branch_id')->label('Cabang')->required()
-                    ->options(fn () => Branch::where('is_active', true)->pluck('name', 'id'))
-                    ->default(fn () => auth()->user()?->branch_id)
-                    ->disabled(fn (string $operation) => $operation === 'edit'),
+                    ->options(fn () => Access::branchOptions(auth()->user()))
+                    ->default(fn () => Access::branchScope(auth()->user()))
+                    ->disabled(fn (string $operation) => $operation === 'edit' || Access::branchScope(auth()->user()) !== null)->dehydrated(),
                 Forms\Components\DatePicker::make('opname_date')->label('Tanggal')->required()
                     ->default(now())->disabled(fn (string $operation) => $operation === 'edit'),
                 Forms\Components\Textarea::make('notes')->label('Catatan')->rows(2)->columnSpanFull(),

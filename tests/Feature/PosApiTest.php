@@ -30,6 +30,7 @@ class PosApiTest extends TestCase
         $this->seed(SaporeSeeder::class);
         $this->seed(SampleRecipeSeeder::class);
         $this->seed(SampleMenuSeeder::class);
+        User::query()->update(['must_change_password' => false]); // akun seeder wajib ganti password; tes API tidak menguji itu
         $this->cashier = User::where('email', 'kasir@sapore.test')->firstOrFail();
 
         $beras = Ingredient::where('code', 'BB-050')->firstOrFail();

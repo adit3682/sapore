@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources;
 
+use App\Support\Access;
+use App\Filament\Support\ChecksAccess;
 use App\Enums\RecipeStatus;
 use App\Filament\Resources\MenuResource\Pages;
 use App\Models\Menu;
@@ -19,6 +21,10 @@ use Illuminate\Support\HtmlString;
 
 class MenuResource extends Resource
 {
+    use ChecksAccess;
+
+    protected static string $accessKey = 'menus';
+
     protected static ?string $model = Menu::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-cake';
@@ -79,12 +85,12 @@ class MenuResource extends Resource
                     ->state(fn (Menu $r) => ($p = $cost->summarize($cost->menuCost($r), $r->selling_price)['food_cost_pct']) === null ? '-' : $p.'%'),
                 Tables\Columns\TextColumn::make('margin')->label('Margin')
                     ->state(fn (Menu $r) => RecipeCostService::rupiah($cost->summarize($cost->menuCost($r), $r->selling_price)['margin'])),
-                Tables\Columns\ToggleColumn::make('is_active')->label('Aktif'),
+                Tables\Columns\ToggleColumn::make('is_active')->label('Aktif')
+                    ->disabled(fn () => ! Access::can(auth()->user(), 'menus', 'update')),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('category_id')->label('Kategori')
-                    ->relationship('category', 'name', fn (Builder $query) => $query->where('type', 'menu'))
-                    ->preload(),
+                    ->relationship('category', 'name', fn (Builder $query) => $query->where('type', 'menu')),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Aktif'),
             ])
             ->actions([Tables\Actions\EditAction::make()])
@@ -107,21 +113,21 @@ class MenuResource extends Resource
             return new HtmlString('<span style="color:#64707d">Pilih resep untuk melihat HPP.</span>');
         }
 
-        $s = app(MenuCostService::class)->summarize($recipe->cost_per_portion, $get('selling_price'));
+        $state = app(MenuCostService::class)->summarize($recipe->cost_per_portion, $get('selling_price'));
         $card = fn (string $label, string $value, string $color) => '<div style="flex:1;min-width:170px;padding:12px 16px;background:#efeae3;'
             ."border-left:4px solid {$color};border-radius:8px\"><div style=\"font-size:12px;color:#64707d\">{$label}</div>"
             .'<div style="font-size:20px;font-weight:700;color:#232d37">'.$value.'</div></div>';
 
-        $html = $card('HPP per Porsi', e(RecipeCostService::rupiah($s['cost'])), '#78907e')
+        $html = $card('HPP per Porsi', e(RecipeCostService::rupiah($state['cost'])), '#78907e')
             .$card('HPP Total Resep', e(RecipeCostService::rupiah($recipe->total_cost)), '#1a365d')
-            .$card('Food Cost', $s['food_cost_pct'] === null ? '-' : e($s['food_cost_pct']).'%', '#c26944');
+            .$card('Food Cost', $state['food_cost_pct'] === null ? '-' : e($state['food_cost_pct']).'%', '#c26944');
 
-        if ($s['margin_pct'] !== null) {
-            $good = bccomp($s['margin'], '0', 2) >= 0;
+        if ($state['margin_pct'] !== null) {
+            $good = bccomp($state['margin'], '0', 2) >= 0;
             $html .= '<div style="flex:1;min-width:200px;padding:12px 16px;border-radius:8px;background:'.($good ? '#e6f2ea' : '#f8e4e1').'">'
                 .'<div style="font-size:12px;color:#64707d">Estimasi Margin Kotor</div>'
                 .'<div style="font-size:20px;font-weight:700;color:'.($good ? '#3f7a55' : '#b94a48').'">'
-                .e(RecipeCostService::rupiah($s['margin'])).' ('.e($s['margin_pct']).'%)</div></div>';
+                .e(RecipeCostService::rupiah($state['margin'])).' ('.e($state['margin_pct']).'%)</div></div>';
         }
 
         return new HtmlString('<div style="display:flex;gap:12px;flex-wrap:wrap">'.$html.'</div>');

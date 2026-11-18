@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\GoodsReceiptResource\Pages;
 
+use App\Support\Access;
 use App\Filament\Resources\GoodsReceiptResource;
 use App\Services\GoodsReceiptService;
 use Filament\Notifications\Notification;
@@ -22,6 +23,12 @@ class CreateGoodsReceipt extends CreateRecord
         unset($data['items']);
 
         try {
+            $scope = Access::branchScope(auth()->user());
+            if ($scope === -1) {
+                throw new \RuntimeException('Akun Anda belum terhubung ke cabang.');
+            }
+            $data['branch_id'] = $scope ?? $data['branch_id']; // akun cabang tidak bisa memilih cabang lain
+
             return app(GoodsReceiptService::class)->post($data + ['uuid' => (string) Str::uuid()], $items, auth()->id());
         } catch (\Throwable $e) {
             Notification::make()->danger()->title('Penerimaan belum bisa disimpan')->body($e->getMessage())->persistent()->send();

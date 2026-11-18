@@ -2,6 +2,8 @@
 
 namespace App\Filament\Widgets;
 
+use App\Enums\Role;
+use App\Support\Access;
 use App\Models\Stock;
 use App\Support\StockQueries;
 use App\Support\StockStatus;
@@ -16,12 +18,17 @@ class LowStockWidget extends TableWidget
 
     protected static ?int $sort = 2;
 
+    public static function canView(): bool
+    {
+        return Access::hasRole(auth()->user(), [Role::Owner, Role::Manager, Role::Chef, Role::Inventory]);
+    }
+
     protected int|string|array $columnSpan = 1;
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => StockQueries::low(auth()->user()?->branch_id)
+            ->query(fn (): Builder => StockQueries::low(Access::branchScope(auth()->user()))
                 ->with('ingredient.baseUnit')
                 ->orderByRaw('stocks.quantity / (select min_stock from ingredients where ingredients.id = stocks.ingredient_id)')
                 ->limit(8))

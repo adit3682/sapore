@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Support\ScopesToBranch;
+use App\Filament\Support\ChecksAccess;
 use App\Enums\OrderStatus;
 use App\Filament\Resources\OrderResource\Pages;
 use App\Models\Order;
@@ -14,6 +16,10 @@ use Filament\Tables\Table;
 
 class OrderResource extends Resource
 {
+    use ChecksAccess, ScopesToBranch;
+
+    protected static string $accessKey = 'orders';
+
     protected static ?string $model = Order::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-receipt-percent';
@@ -55,19 +61,19 @@ class OrderResource extends Resource
             Infolists\Components\Section::make()->schema([
                 Infolists\Components\TextEntry::make('number')->label('No. Order'),
                 Infolists\Components\TextEntry::make('status')->badge()
-                    ->formatStateUsing(fn ($s) => self::STATUS[self::statusValue($s)] ?? $s)
-                    ->color(fn ($s) => self::statusColor($s)),
+                    ->formatStateUsing(fn ($state) => self::STATUS[self::statusValue($state)] ?? $state)
+                    ->color(fn ($state) => self::statusColor($state)),
                 Infolists\Components\TextEntry::make('created_at')->label('Dibuat')->dateTime('d M Y H:i'),
                 Infolists\Components\TextEntry::make('table_label')->label('Meja')->placeholder('-'),
                 Infolists\Components\TextEntry::make('cashier.name')->label('Kasir')->placeholder('-'),
                 Infolists\Components\TextEntry::make('payment_method')->label('Pembayaran')
-                    ->formatStateUsing(fn ($s) => self::METHOD[$s] ?? $s)->placeholder('-'),
+                    ->formatStateUsing(fn ($state) => self::METHOD[$state] ?? $state)->placeholder('-'),
             ])->columns(3),
             Infolists\Components\Section::make('Item')->schema([
                 Infolists\Components\RepeatableEntry::make('items')->label('')->schema([
                     Infolists\Components\TextEntry::make('name')->label('Menu'),
                     Infolists\Components\TextEntry::make('qty')->label('Jumlah')
-                        ->formatStateUsing(fn ($s) => rtrim(rtrim((string) $s, '0'), '.')),
+                        ->formatStateUsing(fn ($state) => rtrim(rtrim((string) $state, '0'), '.')),
                     Infolists\Components\TextEntry::make('unit_price')->label('Harga')->formatStateUsing($rp),
                     Infolists\Components\TextEntry::make('line_total')->label('Subtotal')->formatStateUsing($rp),
                 ])->columns(4),
@@ -92,12 +98,12 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')->label('Waktu')->dateTime('d M Y H:i')->sortable(),
                 Tables\Columns\TextColumn::make('table_label')->label('Meja')->placeholder('-'),
                 Tables\Columns\TextColumn::make('cashier.name')->label('Kasir')->placeholder('-'),
-                Tables\Columns\TextColumn::make('total')->label('Total')->formatStateUsing(fn ($s) => RecipeCostService::rupiah($s)),
+                Tables\Columns\TextColumn::make('total')->label('Total')->formatStateUsing(fn ($state) => RecipeCostService::rupiah($state)),
                 Tables\Columns\TextColumn::make('payment_method')->label('Bayar')
-                    ->formatStateUsing(fn ($s) => self::METHOD[$s] ?? $s)->placeholder('-'),
+                    ->formatStateUsing(fn ($state) => self::METHOD[$state] ?? $state)->placeholder('-'),
                 Tables\Columns\TextColumn::make('status')->badge()
-                    ->formatStateUsing(fn ($s) => self::STATUS[self::statusValue($s)] ?? $s)
-                    ->color(fn ($s) => self::statusColor($s)),
+                    ->formatStateUsing(fn ($state) => self::STATUS[self::statusValue($state)] ?? $state)
+                    ->color(fn ($state) => self::statusColor($state)),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(self::STATUS),

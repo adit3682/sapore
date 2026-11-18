@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\StoreOrderRequest;
 use App\Http\Resources\Api\V1\OrderResource;
 use App\Models\Order;
 use App\Services\OrderService;
+use App\Support\Access;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -22,7 +23,7 @@ class OrderController extends Controller
     public function index(OrderActionRequest $request): AnonymousResourceCollection
     {
         $orders = Order::with('items')
-            ->where('branch_id', $request->user()->branch_id)
+            ->when(Access::branchScope($request->user()) !== null, fn ($q) => $q->where('branch_id', Access::branchScope($request->user())))
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
             ->when($request->query('date'), fn ($q, $d) => $q->whereDate('created_at', $d))
             ->latest('id')->limit(100)->get();
@@ -89,7 +90,7 @@ class OrderController extends Controller
     private function find(Request $request, string $uuid): Order
     {
         return Order::with('items')->where('uuid', $uuid)
-            ->where('branch_id', $request->user()->branch_id)->firstOrFail();
+            ->when(Access::branchScope($request->user()) !== null, fn ($q) => $q->where('branch_id', Access::branchScope($request->user())))->firstOrFail();
     }
 
     private function fail(\Throwable $e, ?Order $order = null): JsonResponse

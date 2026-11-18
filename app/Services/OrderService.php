@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Branch;
+use App\Support\Access;
 use App\Enums\MovementType;
 use App\Enums\OrderStatus;
 use App\Enums\Role;
@@ -111,8 +113,17 @@ class OrderService
         if (! empty($header['uuid']) && ($existing = Order::where('uuid', $header['uuid'])->first())) {
             return $existing->load('items');
         }
-        if (! $cashier->branch_id) {
-            throw new RuntimeException('Akun kasir belum terhubung ke cabang.');
+        $branchId = $cashier->branch_id;
+        $central = Access::isCentral($cashier);
+        if (! $branchId && $central) {
+            // akun pusat (Owner) memilih cabang transaksi; akun cabang selalu memakai cabangnya sendiri
+            $branchId = $header['branch_id'] ?? null;
+            if ($branchId && ! Branch::where('is_active', true)->whereKey($branchId)->exists()) {
+                $branchId = null;
+            }
+        }
+        if (! $branchId) {
+            throw new RuntimeException($central ? 'Pilih cabang untuk transaksi ini.' : 'Akun kasir belum terhubung ke cabang.');
         }
         if (! $lines) {
             throw new InvalidArgumentException('Order harus berisi minimal satu item.');
@@ -120,10 +131,10 @@ class OrderService
 
         $calc = $this->calculate($lines);
 
-        return DB::transaction(function () use ($header, $calc, $cashier) {
+        return DB::transaction(function () use ($header, $calc, $cashier, $branchId) {
             $order = Order::create([
                 'uuid' => $header['uuid'] ?? null,
-                'branch_id' => $cashier->branch_id,
+                'branch_id' => $branchId,
                 'cashier_id' => $cashier->id,
                 'order_type' => $header['order_type'] ?? 'dine_in',
                 'table_label' => $header['table_label'] ?? null,

@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Support\Access;
+use App\Filament\Support\ScopesToBranch;
+use App\Filament\Support\ChecksAccess;
 use App\Filament\Resources\StockResource\Pages;
 use App\Models\Branch;
 use App\Models\Stock;
@@ -18,6 +21,10 @@ use Illuminate\Database\Eloquent\Builder;
 
 class StockResource extends Resource
 {
+    use ChecksAccess, ScopesToBranch;
+
+    protected static string $accessKey = 'stock';
+
     protected static ?string $model = Stock::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-archive-box';
@@ -56,8 +63,8 @@ class StockResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('branch_id')->label('Cabang')
-                    ->options(fn () => Branch::where('is_active', true)->pluck('name', 'id'))
-                    ->default(fn () => auth()->user()?->branch_id)
+                    ->options(fn () => Access::branchOptions(auth()->user()))
+                    ->default(fn () => Access::branchScope(auth()->user()))
                     ->query(fn (Builder $query, array $data) => $query->when($data['value'] ?? null, fn ($query, $v) => $query->where('stocks.branch_id', $v))),
                 Tables\Filters\SelectFilter::make('status')->label('Status')
                     ->options(['critical' => 'Kritis', 'low' => 'Rendah', 'ok' => 'Aman'])
@@ -73,7 +80,7 @@ class StockResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\Action::make('waste')->label('Waste')->icon('heroicon-o-trash')->color('danger')
+                Tables\Actions\Action::make('waste')->visible(fn () => Access::can(auth()->user(), 'stock', 'waste'))->label('Waste')->icon('heroicon-o-trash')->color('danger')
                     ->form(fn (Stock $record) => [
                         Forms\Components\TextInput::make('qty')->label('Jumlah terbuang')->numeric()->required()->minValue(0.0001),
                         Forms\Components\Select::make('unit_id')->label('Satuan')->required()
@@ -86,7 +93,7 @@ class StockResource extends Resource
                             $record->ingredient_id, $record->branch_id, $data['qty'], (int) $data['unit_id'], $data['notes'], auth()->id()
                         ), 'Waste dicatat');
                     }),
-                Tables\Actions\Action::make('adjust')->label('Penyesuaian')->icon('heroicon-o-adjustments-horizontal')
+                Tables\Actions\Action::make('adjust')->visible(fn () => Access::can(auth()->user(), 'stock', 'adjust'))->label('Penyesuaian')->icon('heroicon-o-adjustments-horizontal')
                     ->form(fn (Stock $record) => [
                         Forms\Components\TextInput::make('delta')->label('Perubahan stok (+ / -)')->numeric()->required()
                             ->helperText('Positif menambah, negatif mengurangi. Untuk hitung fisik massal gunakan Stock Opname.'),

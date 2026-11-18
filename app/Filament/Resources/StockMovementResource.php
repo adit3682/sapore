@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Support\Access;
+use App\Filament\Support\ScopesToBranch;
+use App\Filament\Support\ChecksAccess;
 use App\Enums\MovementType;
 use App\Filament\Resources\StockMovementResource\Pages;
 use App\Models\Branch;
@@ -14,6 +17,10 @@ use Illuminate\Database\Eloquent\Builder;
 
 class StockMovementResource extends Resource
 {
+    use ChecksAccess, ScopesToBranch;
+
+    protected static string $accessKey = 'stock_movements';
+
     protected static ?string $model = StockMovement::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';
@@ -73,7 +80,7 @@ class StockMovementResource extends Resource
                 Tables\Filters\SelectFilter::make('type')->label('Jenis')
                     ->options(self::LABELS),
                 Tables\Filters\SelectFilter::make('branch_id')->label('Cabang')
-                    ->options(fn () => Branch::pluck('name', 'id')),
+                    ->options(fn () => Access::branchOptions(auth()->user())),
                 Tables\Filters\SelectFilter::make('ingredient_id')->label('Bahan')->searchable()
                     ->options(fn () => Ingredient::orderBy('name')->pluck('name', 'id')),
             ])

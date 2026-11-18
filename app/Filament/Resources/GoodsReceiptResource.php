@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use Illuminate\Database\Eloquent\Builder;
+use App\Support\Access;
+use App\Filament\Support\ScopesToBranch;
+use App\Filament\Support\ChecksAccess;
 use App\Filament\Resources\GoodsReceiptResource\Pages;
 use App\Models\Branch;
 use App\Models\GoodsReceipt;
@@ -23,6 +25,10 @@ use Illuminate\Support\HtmlString;
 
 class GoodsReceiptResource extends Resource
 {
+    use ChecksAccess, ScopesToBranch;
+
+    protected static string $accessKey = 'goods_receipts';
+
     protected static ?string $model = GoodsReceipt::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-inbox-arrow-down';
@@ -40,8 +46,9 @@ class GoodsReceiptResource extends Resource
         return $form->schema([
             Forms\Components\Section::make('Penerimaan')->schema([
                 Forms\Components\Select::make('branch_id')->label('Cabang')->required()
-                    ->options(fn () => Branch::where('is_active', true)->pluck('name', 'id'))
-                    ->default(fn () => auth()->user()?->branch_id),
+                    ->options(fn () => Access::branchOptions(auth()->user()))
+                    ->default(fn () => Access::branchScope(auth()->user()))
+                    ->disabled(fn () => Access::branchScope(auth()->user()) !== null)->dehydrated(),
                 Forms\Components\Select::make('supplier_id')->label('Supplier')
                     ->options(fn () => Supplier::where('is_active', true)->orderBy('name')->pluck('name', 'id'))
                     ->searchable(),
@@ -70,7 +77,7 @@ class GoodsReceiptResource extends Resource
                             ->minValue(0)->prefix('Rp')->live(onBlur: true)->columnSpan(3),
                         Forms\Components\Placeholder::make('subtotal')->label('Subtotal')
                             ->content(function (Get $get) {
-                                $q = $get('qty');
+                                $query = $get('qty');
                                 $p = $get('unit_price');
 
                                 return is_numeric($query) && is_numeric($p)
@@ -125,7 +132,7 @@ class GoodsReceiptResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['branch', 'supplier', 'creator']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['branch', 'supplier', 'creator']))
             ->columns([
                 Tables\Columns\TextColumn::make('number')->label('No.')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('receipt_date')->label('Tanggal')->date('d M Y')->sortable(),

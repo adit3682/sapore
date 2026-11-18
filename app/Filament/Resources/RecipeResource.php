@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources;
 
-use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Support\ChecksAccess;
 use App\Enums\RecipeStatus;
 use App\Filament\Resources\RecipeResource\Pages;
 use App\Models\Ingredient;
@@ -23,6 +23,10 @@ use Illuminate\Support\HtmlString;
 
 class RecipeResource extends Resource
 {
+    use ChecksAccess;
+
+    protected static string $accessKey = 'recipes';
+
     protected static ?string $model = Recipe::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-book-open';
@@ -145,7 +149,7 @@ class RecipeResource extends Resource
                         default => 'warning',
                     }),
             ])
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('yieldUnit'))
+            ->modifyQueryUsing(fn ($query) => $query->with('yieldUnit'))
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(self::statusOptions()),
             ])
@@ -176,7 +180,7 @@ class RecipeResource extends Resource
     public static function statusOptions(): array
     {
         return collect(RecipeStatus::cases())
-            ->mapWithKeys(fn (RecipeStatus $s) => [$s->value => ucfirst($s->value)])->all();
+            ->mapWithKeys(fn (RecipeStatus $state) => [$state->value => ucfirst($state->value)])->all();
     }
 
     /** Pastikan kolom yang tidak dipakai bernilai NULL (saat user pindah jenis baris). */

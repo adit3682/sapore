@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Support\ChecksAccess;
 use App\Filament\Resources\UnitConversionResource\Pages;
 use App\Models\UnitConversion;
 use Filament\Forms;
@@ -12,6 +13,10 @@ use Filament\Tables\Table;
 
 class UnitConversionResource extends Resource
 {
+    use ChecksAccess;
+
+    protected static string $accessKey = 'master_data';
+
     protected static ?string $model = UnitConversion::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrows-right-left';

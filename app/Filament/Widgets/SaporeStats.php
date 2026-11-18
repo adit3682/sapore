@@ -2,6 +2,8 @@
 
 namespace App\Filament\Widgets;
 
+use App\Enums\Role;
+use App\Support\Access;
 use App\Models\Menu;
 use App\Models\ProductionPlan;
 use App\Support\StockQueries;
@@ -12,12 +14,17 @@ class SaporeStats extends StatsOverviewWidget
 {
     protected static ?int $sort = 1;
 
+    public static function canView(): bool
+    {
+        return Access::hasRole(auth()->user(), [Role::Owner, Role::Manager, Role::Chef, Role::Inventory]);
+    }
+
     protected function getStats(): array
     {
-        $branchId = auth()->user()?->branch_id;
+        $branchId = Access::branchScope(auth()->user());
 
         $plansToday = ProductionPlan::whereDate('plan_date', today())
-            ->when($branchId, fn ($query, $b) => $query->where('branch_id', $b))->count();
+            ->when($branchId, fn ($q, $b) => $q->where('branch_id', $b))->count();
 
         return [
             Stat::make('Rencana Produksi', $plansToday)->description('Hari ini')->color('primary'),

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Support\ChecksAccess;
 use App\Filament\Resources\UnitResource\Pages;
 use App\Models\Unit;
 use Filament\Forms;
@@ -12,6 +13,10 @@ use Filament\Tables\Table;
 
 class UnitResource extends Resource
 {
+    use ChecksAccess;
+
+    protected static string $accessKey = 'master_data';
+
     protected static ?string $model = Unit::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-scale';

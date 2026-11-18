@@ -28,6 +28,8 @@ class User extends Authenticatable implements FilamentUser
         'role',
         'branch_id',
         'is_active',
+        'must_change_password',
+        'password_changed_at',
     ];
 
     /**
@@ -52,6 +54,8 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'role' => Role::class,
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
+            'password_changed_at' => 'datetime',
         ];
     }
 
@@ -62,6 +66,6 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_active ?? true;
+        return (bool) ($this->is_active ?? true);
     }
 }

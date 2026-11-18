@@ -2,6 +2,8 @@
 
 namespace App\Filament\Widgets;
 
+use App\Enums\Role;
+use App\Support\Access;
 use App\Enums\PlanStatus;
 use App\Filament\Resources\ProductionPlanResource;
 use App\Models\ProductionPlan;
@@ -16,6 +18,11 @@ class TodayPlansWidget extends TableWidget
 
     protected static ?int $sort = 3;
 
+    public static function canView(): bool
+    {
+        return Access::hasRole(auth()->user(), [Role::Owner, Role::Manager, Role::Chef, Role::Inventory]);
+    }
+
     protected int|string|array $columnSpan = 1;
 
     public function table(Table $table): Table
@@ -23,7 +30,7 @@ class TodayPlansWidget extends TableWidget
         return $table
             ->query(fn (): Builder => ProductionPlan::query()
                 ->whereDate('plan_date', today())
-                ->when(auth()->user()?->branch_id, fn ($query, $b) => $query->where('branch_id', $b))
+                ->when(Access::branchScope(auth()->user()), fn ($q, $b) => $q->where('branch_id', $b))
                 ->with('branch')->withCount('items')->latest('id')->limit(8))
             ->paginated(false)
             ->emptyStateHeading('Belum ada rencana produksi hari ini')

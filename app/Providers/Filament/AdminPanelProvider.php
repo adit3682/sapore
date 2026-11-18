@@ -2,6 +2,9 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Navigation\MenuItem;
+use App\Http\Middleware\EnsurePasswordChanged;
+use App\Filament\Pages\ChangePassword;
 use App\Support\SaporePalette;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -46,7 +49,11 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(PanelsRenderHook::USER_MENU_BEFORE, fn (): string => view('filament.hooks.user-context')->render())
 
             // Navigasi
-            ->navigationGroups(['Penjualan', 'Produksi', 'Inventory', 'Resep & Menu', 'Laporan', 'Master Data'])
+            ->navigationGroups(['Penjualan', 'Produksi', 'Inventory', 'Resep & Menu', 'Laporan', 'Master Data', 'Pengaturan'])
+            ->userMenuItems([
+                MenuItem::make()->label('Ganti Password')->icon('heroicon-o-key')
+                    ->url(fn (): string => ChangePassword::getUrl()),
+            ])
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
 
@@ -69,6 +76,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsurePasswordChanged::class, // akun must_change_password dipaksa ke Ganti Password
             ]);
     }
 }

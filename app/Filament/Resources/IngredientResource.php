@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Support\ChecksAccess;
 use App\Filament\Resources\IngredientResource\Pages;
 use App\Models\Ingredient;
 use App\Services\RecipeCostService;
@@ -14,6 +15,10 @@ use Illuminate\Database\Eloquent\Builder;
 
 class IngredientResource extends Resource
 {
+    use ChecksAccess;
+
+    protected static string $accessKey = 'master_data';
+
     protected static ?string $model = Ingredient::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-cube';

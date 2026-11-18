@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\StockOpnameResource\Pages;
 
+use App\Support\Access;
 use App\Filament\Resources\StockOpnameResource;
 use App\Services\StockOpnameService;
 use Filament\Actions;
@@ -15,7 +16,8 @@ class EditStockOpname extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('confirm')->label('Konfirmasi Hasil')->icon('heroicon-o-check-circle')->color('success')
+            Actions\Action::make('confirm')->label('Konfirmasi Hasil')
+                ->visible(fn () => Access::can(auth()->user(), 'stock_opnames', 'confirm'))->icon('heroicon-o-check-circle')->color('success')
                 ->requiresConfirmation()
                 ->modalDescription(function () {
                     $left = $this->record->items()->whereNull('physical_qty')->count();
@@ -34,7 +36,8 @@ class EditStockOpname extends EditRecord
                     }
                 }),
 
-            Actions\Action::make('cancel')->label('Batalkan Opname')->icon('heroicon-o-x-circle')->color('gray')
+            Actions\Action::make('cancel')->label('Batalkan Opname')
+                ->visible(fn () => Access::can(auth()->user(), 'stock_opnames', 'update'))->icon('heroicon-o-x-circle')->color('gray')
                 ->requiresConfirmation()
                 ->action(function () {
                     try {

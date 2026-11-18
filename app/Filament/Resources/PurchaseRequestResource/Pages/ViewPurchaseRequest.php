@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PurchaseRequestResource\Pages;
 
+use App\Support\Access;
 use App\Enums\PurchaseRequestStatus;
 use App\Filament\Resources\PurchaseRequestResource;
 use App\Services\PurchaseRequestService;
@@ -20,7 +21,7 @@ class ViewPurchaseRequest extends ViewRecord
         return [
             Actions\Action::make('submit')->label('Ajukan')->icon('heroicon-o-paper-airplane')
                 ->requiresConfirmation()
-                ->visible(fn () => $this->record->status === PurchaseRequestStatus::Draft)
+                ->visible(fn () => Access::can(auth()->user(), 'purchase_requests', 'submit') && $this->record->status === PurchaseRequestStatus::Draft)
                 ->action(fn () => $this->run(fn () => $svc()->submit($this->record), 'Purchase Request diajukan')),
 
             Actions\Action::make('approve')->label('Setujui')->icon('heroicon-o-check')->color('success')

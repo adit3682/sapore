@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Support\ScopesToBranch;
+use App\Filament\Support\ChecksAccess;
 use App\Enums\PurchaseRequestStatus;
 use App\Filament\Resources\PurchaseRequestResource\Pages;
 use App\Models\PurchaseRequest;
@@ -14,6 +16,10 @@ use Filament\Tables\Table;
 
 class PurchaseRequestResource extends Resource
 {
+    use ChecksAccess, ScopesToBranch;
+
+    protected static string $accessKey = 'purchase_requests';
+
     protected static ?string $model = PurchaseRequest::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';

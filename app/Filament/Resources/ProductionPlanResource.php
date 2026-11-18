@@ -2,6 +2,9 @@
 
 namespace App\Filament\Resources;
 
+use App\Support\Access;
+use App\Filament\Support\ScopesToBranch;
+use App\Filament\Support\ChecksAccess;
 use App\Enums\PlanStatus;
 use App\Filament\Resources\ProductionPlanResource\Pages;
 use App\Models\Branch;
@@ -18,6 +21,10 @@ use Filament\Tables\Table;
 
 class ProductionPlanResource extends Resource
 {
+    use ChecksAccess, ScopesToBranch;
+
+    protected static string $accessKey = 'production_plans';
+
     protected static ?string $model = ProductionPlan::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
@@ -33,7 +40,7 @@ class ProductionPlanResource extends Resource
     /** Hanya rencana Draft yang boleh diubah. */
     public static function canEdit($record): bool
     {
-        return $record->status === PlanStatus::Draft;
+        return Access::can(auth()->user(), 'production_plans', 'update') && $record->status === PlanStatus::Draft;
     }
 
     public static function canDelete($record): bool
@@ -47,8 +54,9 @@ class ProductionPlanResource extends Resource
             Forms\Components\Section::make('Rencana')->schema([
                 Forms\Components\DatePicker::make('plan_date')->label('Tanggal produksi')->required()->default(now()),
                 Forms\Components\Select::make('branch_id')->label('Cabang')->required()
-                    ->options(fn () => Branch::where('is_active', true)->pluck('name', 'id'))
-                    ->default(fn () => auth()->user()?->branch_id),
+                    ->options(fn () => Access::branchOptions(auth()->user()))
+                    ->default(fn () => Access::branchScope(auth()->user()))
+                    ->disabled(fn () => Access::branchScope(auth()->user()) !== null)->dehydrated(),
                 Forms\Components\Textarea::make('notes')->label('Catatan')->rows(2)->columnSpanFull(),
             ])->columns(2),
 
@@ -94,7 +102,7 @@ class ProductionPlanResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(['draft' => 'Draft', 'confirmed' => 'Confirmed', 'done' => 'Done']),
                 Tables\Filters\SelectFilter::make('branch_id')->label('Cabang')
-                    ->options(fn () => Branch::pluck('name', 'id')),
+                    ->options(fn () => Access::branchOptions(auth()->user())),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()->label('Buka'),

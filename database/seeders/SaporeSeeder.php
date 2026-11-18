@@ -41,6 +41,7 @@ class SaporeSeeder extends Seeder
 
         foreach ([
             ['Owner', 'owner@sapore.test', 'owner'],
+            ['Manager Dewi', 'manager@sapore.test', 'manager'],
             ['Chef Andi', 'chef@sapore.test', 'chef'],
             ['Staff Inventory', 'inventory@sapore.test', 'inventory'],
             ['Kasir Rina', 'kasir@sapore.test', 'cashier'],
@@ -49,7 +50,8 @@ class SaporeSeeder extends Seeder
                 'name' => $name,
                 'password' => Hash::make('password'),
                 'role' => $role,
-                'branch_id' => $branch->id,
+                'branch_id' => $role === 'owner' ? null : $branch->id, // Owner = akun pusat
+                // must_change_password bernilai true (bawaan kolom): password awal wajib diganti
             ]);
         }
     }

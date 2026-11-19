@@ -49,7 +49,7 @@ final class Access
             ],
             'pos' => ['owner' => $cr, 'manager' => $cr, 'cashier' => $cr],
             'orders' => [
-                'owner' => ['view', 'void'], 'manager' => ['view', 'void'], 'cashier' => ['view', 'void'],
+                'owner' => ['view', 'void', 'refund'], 'manager' => ['view', 'void', 'refund'], 'cashier' => ['view', 'void'],
             ],
         ];
     }

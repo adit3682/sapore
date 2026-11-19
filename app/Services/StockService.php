@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
  *   uuid           kunci idempotensi; kirim ulang uuid yang sama = tidak diproses dua kali
  *   reference_type, reference_id, notes, created_by, allow_negative
  *
- * Tanda kuantitas: in = +, out/waste = -, adjustment = sesuai tanda qty yang dikirim.
+ * Tanda kuantitas: in/return = +, out/waste = -, adjustment = sesuai tanda qty yang dikirim.
  *
  * Catatan: setelah `in` yang mengubah avg_cost, pemanggil wajib menghitung ulang HPP
  * (RecipeCostService::recalculateForIngredient) SESUDAH transaksi terluarnya commit.
@@ -52,7 +52,7 @@ class StockService
             $qtyInput = UnitConverter::normalize($in['qty']);
             $absBase = $this->converter->toBase(ltrim($qtyInput, '-'), (int) $in['unit_id'], $ingredient);
             $negative = match ($type) {
-                MovementType::In => false,
+                MovementType::In, MovementType::Return => false,
                 MovementType::Out, MovementType::Waste => true,
                 default => str_starts_with($qtyInput, '-'),
             };

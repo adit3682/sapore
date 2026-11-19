@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use Filament\Notifications\Actions\Action as NotificationAction;
 use App\Models\Branch;
 use App\Support\Access;
 use App\Enums\OrderStatus;
@@ -217,7 +218,12 @@ class PosPage extends Page
 
             $change = (float) $order->change_amount;
             Notification::make()->success()->title("Order {$order->number} dibayar")
-                ->body($change > 0 ? 'Kembalian Rp '.number_format($change, 0, ',', '.') : null)->send();
+                ->body($change > 0 ? 'Kembalian Rp '.number_format($change, 0, ',', '.') : null)
+                ->actions([
+                    NotificationAction::make('print')->label('Cetak struk')->button()
+                        ->url(ReceiptPage::getUrl(['type' => 'order', 'id' => $order->id, 'print' => 1]), shouldOpenInNewTab: true),
+                ])
+                ->duration(15000)->send();
             $this->clearCart();
         });
     }

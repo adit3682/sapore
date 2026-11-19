@@ -28,6 +28,8 @@ Route::prefix('v1')->group(function () {
             Route::get('orders/{uuid}', [OrderController::class, 'show']);
             Route::post('orders/{uuid}/pay', [OrderController::class, 'pay']);
             Route::post('orders/{uuid}/void', [OrderController::class, 'void']);
+            Route::post('orders/{uuid}/returns', [OrderController::class, 'refund']);
+            Route::get('orders/{uuid}/receipt', [OrderController::class, 'receipt']);
         });
     });
 });

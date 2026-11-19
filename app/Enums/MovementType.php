@@ -9,4 +9,5 @@ enum MovementType: string
     case Adjustment = 'adjustment';
     case Waste = 'waste';
     case Transfer = 'transfer';
+    case Return = 'return'; // bahan kembali karena retur penjualan (stok bertambah)
 }

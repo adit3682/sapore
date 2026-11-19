@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Pages\ReceiptPage;
 use App\Filament\Support\ScopesToBranch;
 use App\Filament\Support\ChecksAccess;
 use App\Enums\OrderStatus;
@@ -78,6 +79,19 @@ class OrderResource extends Resource
                     Infolists\Components\TextEntry::make('line_total')->label('Subtotal')->formatStateUsing($rp),
                 ])->columns(4),
             ]),
+            Infolists\Components\Section::make('Retur')
+                ->visible(fn ($record) => $record->returns->isNotEmpty())
+                ->schema([
+                    Infolists\Components\RepeatableEntry::make('returns')->label('')->schema([
+                        Infolists\Components\TextEntry::make('number')->label('No. Retur')
+                            ->url(fn ($record) => ReceiptPage::getUrl(['type' => 'return', 'id' => $record->id]))->openUrlInNewTab(),
+                        Infolists\Components\TextEntry::make('returned_at')->label('Waktu')->dateTime('d M Y H:i'),
+                        Infolists\Components\TextEntry::make('mode')->label('Makanan')
+                            ->formatStateUsing(fn ($state) => $state === 'restock' ? 'Kembali ke stok' : 'Dibuang (waste)'),
+                        Infolists\Components\TextEntry::make('total_refund')->label('Dikembalikan')->formatStateUsing($rp),
+                        Infolists\Components\TextEntry::make('reason')->label('Alasan')->columnSpanFull(),
+                    ])->columns(4),
+                ]),
             Infolists\Components\Section::make('Pembayaran')->schema([
                 Infolists\Components\TextEntry::make('subtotal')->formatStateUsing($rp),
                 Infolists\Components\TextEntry::make('tax_amount')->label('Pajak')->formatStateUsing($rp),
@@ -85,6 +99,8 @@ class OrderResource extends Resource
                 Infolists\Components\TextEntry::make('total')->formatStateUsing($rp)->weight('bold'),
                 Infolists\Components\TextEntry::make('amount_paid')->label('Diterima')->formatStateUsing($rp)->placeholder('-'),
                 Infolists\Components\TextEntry::make('change_amount')->label('Kembalian')->formatStateUsing($rp)->placeholder('-'),
+                Infolists\Components\TextEntry::make('refunded_total')->label('Total diretur')->formatStateUsing($rp)
+                    ->visible(fn ($record) => (float) $record->refunded_total > 0),
             ])->columns(3),
         ]);
     }
@@ -99,6 +115,9 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('table_label')->label('Meja')->placeholder('-'),
                 Tables\Columns\TextColumn::make('cashier.name')->label('Kasir')->placeholder('-'),
                 Tables\Columns\TextColumn::make('total')->label('Total')->formatStateUsing(fn ($state) => RecipeCostService::rupiah($state)),
+                Tables\Columns\TextColumn::make('retur')->label('Retur')->badge()
+                    ->state(fn (Order $r) => ['none' => null, 'partial' => 'Sebagian', 'full' => 'Penuh'][$r->returnState()])
+                    ->color(fn ($state) => $state === 'Penuh' ? 'danger' : 'warning')->placeholder('-'),
                 Tables\Columns\TextColumn::make('payment_method')->label('Bayar')
                     ->formatStateUsing(fn ($state) => self::METHOD[$state] ?? $state)->placeholder('-'),
                 Tables\Columns\TextColumn::make('status')->badge()

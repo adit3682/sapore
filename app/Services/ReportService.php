@@ -30,7 +30,10 @@ class ReportService
         return (string) config('sapore.food_cost_target', 35);
     }
 
-    /** Penjualan harian: omzet, pajak, service, HPP, margin. */
+    /**
+     * Penjualan harian: omzet, pajak, service, HPP, margin.
+     * Retur dikurangkan pada TANGGAL RETUR (bukan tanggal order), sehingga angka hari yang sudah ditutup tidak berubah.
+     */
     public function salesDaily(Carbon $from, Carbon $to, ?int $branchId): array
     {
         $paid = fn () => DB::table('orders')->where('orders.status', 'paid')
@@ -38,33 +41,48 @@ class ReportService
             ->when($branchId, fn ($q, $b) => $q->where('orders.branch_id', $b));
 
         $days = $paid()->selectRaw('DATE(orders.paid_at) as day, COUNT(*) as orders_count, SUM(orders.subtotal) as subtotal, SUM(orders.tax_amount) as tax, SUM(orders.service_amount) as service, SUM(orders.total) as total')
-            ->groupByRaw('DATE(orders.paid_at)')->orderBy('day')->get();
+            ->groupByRaw('DATE(orders.paid_at)')->get()->keyBy('day');
 
         $cost = $paid()->join('order_items', 'order_items.order_id', '=', 'orders.id')
             ->selectRaw('DATE(orders.paid_at) as day, SUM(order_items.unit_cost * order_items.qty) as cost')
             ->groupByRaw('DATE(orders.paid_at)')->pluck('cost', 'day');
 
-        $rows = [];
-        $t = ['orders' => 0, 'subtotal' => '0', 'tax' => '0', 'service' => '0', 'total' => '0', 'cost' => '0'];
+        $returns = DB::table('order_returns')->whereBetween('returned_at', [$from, $to])
+            ->when($branchId, fn ($q, $b) => $q->where('branch_id', $b))
+            ->selectRaw('DATE(returned_at) as day, SUM(subtotal_refund) as subtotal, SUM(tax_refund) as tax, SUM(service_refund) as service, SUM(total_refund) as total, SUM(cost_refund) as cost')
+            ->groupByRaw('DATE(returned_at)')->get()->keyBy('day');
 
-        foreach ($days as $d) {
-            $subtotal = $this->money($d->subtotal);
-            $c = $this->money($cost[$d->day] ?? 0);
+        $rows = [];
+        $t = ['orders' => 0, 'subtotal' => '0', 'tax' => '0', 'service' => '0', 'total' => '0', 'cost' => '0', 'returns' => '0'];
+
+        foreach ($days->keys()->merge($returns->keys())->unique()->sort()->values() as $day) {
+            $d = $days[$day] ?? null;
+            $r = $returns[$day] ?? null;
+
+            $returned = $this->money($r->subtotal ?? 0);
+            $subtotal = bcsub($this->money($d->subtotal ?? 0), $returned, 2);
+            $tax = bcsub($this->money($d->tax ?? 0), $this->money($r->tax ?? 0), 2);
+            $service = bcsub($this->money($d->service ?? 0), $this->money($r->service ?? 0), 2);
+            $total = bcsub($this->money($d->total ?? 0), $this->money($r->total ?? 0), 2);
+            $c = bcsub($this->money($cost[$day] ?? 0), $this->money($r->cost ?? 0), 2);
             $margin = bcsub($subtotal, $c, 2);
+            $orders = (int) ($d->orders_count ?? 0);
 
             $rows[] = [
-                'date' => Carbon::parse($d->day)->format('d M Y'),
-                'orders' => (int) $d->orders_count,
-                'subtotal' => $subtotal, 'tax' => $this->money($d->tax), 'service' => $this->money($d->service),
-                'total' => $this->money($d->total), 'cost' => $c, 'margin' => $margin,
-                'margin_pct' => $this->pct($margin, $subtotal),
+                'date' => Carbon::parse($day)->format('d M Y'),
+                'orders' => $orders,
+                'subtotal' => $subtotal, 'tax' => $tax, 'service' => $service, 'total' => $total,
+                'cost' => $c, 'margin' => $margin, 'margin_pct' => $this->pct($margin, $subtotal),
+                'returns' => $returned,
             ];
 
-            $t['orders'] += (int) $d->orders_count;
-            foreach (['subtotal', 'tax', 'service', 'total'] as $k) {
-                $t[$k] = bcadd($t[$k], $this->money($d->{$k}), 2);
-            }
+            $t['orders'] += $orders;
+            $t['subtotal'] = bcadd($t['subtotal'], $subtotal, 2);
+            $t['tax'] = bcadd($t['tax'], $tax, 2);
+            $t['service'] = bcadd($t['service'], $service, 2);
+            $t['total'] = bcadd($t['total'], $total, 2);
             $t['cost'] = bcadd($t['cost'], $c, 2);
+            $t['returns'] = bcadd($t['returns'], $returned, 2);
         }
 
         $margin = bcsub($t['subtotal'], $t['cost'], 2);
@@ -77,7 +95,7 @@ class ReportService
                 $this->col('subtotal', 'Penjualan neto', 'money'), $this->col('tax', 'Pajak', 'money'),
                 $this->col('service', 'Service', 'money'), $this->col('total', 'Total diterima', 'money'),
                 $this->col('cost', 'HPP', 'money'), $this->col('margin', 'Margin kotor', 'money'),
-                $this->col('margin_pct', 'Margin %', 'pct'),
+                $this->col('margin_pct', 'Margin %', 'pct'), $this->col('returns', 'Retur (sudah dikurangkan)', 'money'),
             ],
             'rows' => $rows,
             'summary' => [
@@ -87,36 +105,52 @@ class ReportService
                 $this->sum('HPP', $t['cost'], 'money'),
                 $this->sum('Margin kotor', $margin, 'money'),
                 $this->sum('Rata-rata per order', $t['orders'] ? bcdiv($t['total'], (string) $t['orders'], 2) : '0.00', 'money'),
+                $this->sum('Retur dalam periode', $t['returns'], 'money'),
             ],
-            'notes' => ['Penjualan neto = jumlah harga item sebelum pajak dan service. HPP memakai harga pokok saat transaksi terjadi.'],
+            'notes' => [
+                'Penjualan neto = jumlah harga item sebelum pajak dan service, sudah dikurangi retur. HPP memakai harga pokok saat transaksi terjadi.',
+                'Retur dikurangkan pada tanggal retur, bukan tanggal order. Hari dengan retur lebih besar dari penjualan tampil negatif.',
+            ],
         ];
     }
 
-    /** Margin & food cost per menu/paket yang terjual, dibandingkan dengan target. */
+    /** Margin & food cost per menu/paket yang terjual (neto retur), dibandingkan dengan target. */
     public function menuMargin(Carbon $from, Carbon $to, ?int $branchId): array
     {
         $target = $this->foodCostTarget();
 
-        $items = DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')
+        $sold = DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('orders.status', 'paid')->whereBetween('orders.paid_at', [$from, $to])
             ->when($branchId, fn ($q, $b) => $q->where('orders.branch_id', $b))
             ->selectRaw('order_items.item_type, order_items.item_id, MAX(order_items.name) as name, SUM(order_items.qty) as qty, SUM(order_items.line_total) as revenue, SUM(order_items.unit_cost * order_items.qty) as cost')
-            ->groupBy('order_items.item_type', 'order_items.item_id')
-            ->orderByDesc('revenue')->get();
+            ->groupBy('order_items.item_type', 'order_items.item_id')->get()
+            ->keyBy(fn ($r) => $r->item_type.':'.$r->item_id);
+
+        $returned = DB::table('order_return_items as ri')->join('order_returns as r', 'r.id', '=', 'ri.order_return_id')
+            ->whereBetween('r.returned_at', [$from, $to])
+            ->when($branchId, fn ($q, $b) => $q->where('r.branch_id', $b))
+            ->selectRaw('ri.item_type, ri.item_id, MAX(ri.name) as name, SUM(ri.qty) as qty, SUM(ri.line_total) as revenue, SUM(ri.unit_cost * ri.qty) as cost')
+            ->groupBy('ri.item_type', 'ri.item_id')->get()
+            ->keyBy(fn ($r) => $r->item_type.':'.$r->item_id);
 
         $rows = [];
         $revenue = '0';
         $cost = '0';
 
-        foreach ($items as $i) {
-            $rev = $this->money($i->revenue);
-            $c = $this->money($i->cost);
+        foreach ($sold->keys()->merge($returned->keys())->unique() as $key) {
+            $i = $sold[$key] ?? null;
+            $r = $returned[$key] ?? null;
+            $base = $i ?? $r;
+
+            $qty = bcsub($this->qty($i->qty ?? 0), $this->qty($r->qty ?? 0), 4);
+            $rev = bcsub($this->money($i->revenue ?? 0), $this->money($r->revenue ?? 0), 2);
+            $c = bcsub($this->money($i->cost ?? 0), $this->money($r->cost ?? 0), 2);
             $fc = $this->pct($c, $rev);
             $margin = bcsub($rev, $c, 2);
 
             $rows[] = [
-                'name' => $i->name, 'kind' => $i->item_type === 'package' ? 'Paket' : 'Menu',
-                'qty' => $this->qty($i->qty), 'revenue' => $rev, 'cost' => $c, 'margin' => $margin,
+                'name' => $base->name, 'kind' => $base->item_type === 'package' ? 'Paket' : 'Menu',
+                'qty' => $qty, 'revenue' => $rev, 'cost' => $c, 'margin' => $margin,
                 'margin_pct' => $this->pct($margin, $rev), 'food_cost' => $fc,
                 'status' => $this->targetStatus($fc, $target),
             ];
@@ -124,13 +158,15 @@ class ReportService
             $cost = bcadd($cost, $c, 2);
         }
 
+        usort($rows, fn ($a, $b) => bccomp($b['revenue'], $a['revenue'], 2) ?: strcmp($a['name'], $b['name']));
+
         $fcTotal = $this->pct($cost, $revenue);
 
         return [
             'title' => 'Margin per Menu',
             'meta' => $this->meta($from, $to, $branchId),
             'columns' => [
-                $this->col('name', 'Menu / Paket'), $this->col('kind', 'Jenis'), $this->col('qty', 'Terjual', 'qty'),
+                $this->col('name', 'Menu / Paket'), $this->col('kind', 'Jenis'), $this->col('qty', 'Terjual (neto retur)', 'qty'),
                 $this->col('revenue', 'Penjualan neto', 'money'), $this->col('cost', 'HPP', 'money'),
                 $this->col('margin', 'Margin', 'money'), $this->col('margin_pct', 'Margin %', 'pct'),
                 $this->col('food_cost', 'Food cost %', 'pct'), $this->col('status', 'Vs target', 'status'),
@@ -144,7 +180,10 @@ class ReportService
                 $this->sum('Target food cost', $target, 'pct'),
                 $this->sum('Status', $this->targetStatus($fcTotal, $target), 'status'),
             ],
-            'notes' => ['Food cost % = HPP / penjualan neto. Target dapat diatur lewat SAPORE_FOOD_COST_TARGET.'],
+            'notes' => [
+                'Food cost % = HPP / penjualan neto. Target dapat diatur lewat SAPORE_FOOD_COST_TARGET.',
+                'Jumlah terjual dan penjualan sudah dikurangi retur pada periode yang sama.',
+            ],
         ];
     }
 
@@ -199,13 +238,13 @@ class ReportService
             ->join('ingredients as i', 'i.id', '=', 'm.ingredient_id')
             ->join('units as u', 'u.id', '=', 'i.base_unit_id')
             ->whereBetween('m.created_at', [$from, $to])
-            ->whereIn('m.type', ['out', 'waste', 'adjustment'])
+            ->whereIn('m.type', ['out', 'return', 'waste', 'adjustment'])
             ->when($branchId, fn ($q, $b) => $q->where('m.branch_id', $b))
             ->selectRaw("i.code, i.name, u.symbol as unit,
-                SUM(CASE WHEN m.type = 'out' THEN -m.qty_base ELSE 0 END) as used,
+                SUM(CASE WHEN m.type IN ('out', 'return') THEN -m.qty_base ELSE 0 END) as used,
                 SUM(CASE WHEN m.type = 'waste' THEN -m.qty_base ELSE 0 END) as waste,
                 SUM(CASE WHEN m.type = 'adjustment' THEN m.qty_base ELSE 0 END) as adjustment,
-                SUM(CASE WHEN m.type = 'out' THEN -m.qty_base * COALESCE(m.unit_cost, 0) ELSE 0 END) as used_cost,
+                SUM(CASE WHEN m.type IN ('out', 'return') THEN -m.qty_base * COALESCE(m.unit_cost, 0) ELSE 0 END) as used_cost,
                 SUM(CASE WHEN m.type = 'waste' THEN -m.qty_base * COALESCE(m.unit_cost, 0) ELSE 0 END) as waste_cost")
             ->groupBy('i.id', 'i.code', 'i.name', 'u.symbol')->get();
 
@@ -251,6 +290,7 @@ class ReportService
             ],
             'notes' => [
                 'Satuan mengikuti satuan dasar tiap bahan. Penyesuaian bertanda: + menambah stok, - mengurangi (mis. hasil Stock Opname).',
+                'Retur penjualan mengurangi "terpakai"; makanan retur yang dibuang tercatat sebagai waste.',
                 'Nilai memakai harga rata-rata bahan saat pergerakan terjadi.',
             ],
         ];
@@ -320,7 +360,7 @@ class ReportService
         $since = now()->subDays($lookbackDays)->startOfDay();
 
         $usage = DB::table('stock_movements as m')
-            ->where('m.type', 'out')->where('m.created_at', '>=', $since)
+            ->whereIn('m.type', ['out', 'return'])->where('m.created_at', '>=', $since)
             ->when($branchId, fn ($q, $b) => $q->where('m.branch_id', $b))
             ->selectRaw('m.ingredient_id, SUM(-m.qty_base) as used')
             ->groupBy('m.ingredient_id')->pluck('used', 'ingredient_id');

@@ -49,7 +49,7 @@ class StockMovementResource extends Resource
     }
 
     private const LABELS = [
-        'in' => 'Masuk', 'out' => 'Keluar', 'adjustment' => 'Penyesuaian', 'waste' => 'Waste', 'transfer' => 'Transfer',
+        'in' => 'Masuk', 'out' => 'Keluar', 'adjustment' => 'Penyesuaian', 'waste' => 'Waste', 'transfer' => 'Transfer', 'return' => 'Retur',
     ];
 
     public static function table(Table $table): Table
@@ -63,7 +63,7 @@ class StockMovementResource extends Resource
                 Tables\Columns\TextColumn::make('type')->label('Jenis')->badge()
                     ->formatStateUsing(fn ($state) => self::LABELS[$state instanceof MovementType ? $state->value : $state] ?? $state)
                     ->color(fn ($state) => match ($state instanceof MovementType ? $state->value : $state) {
-                        'in' => 'success', 'out' => 'gray', 'waste' => 'danger', default => 'warning',
+                        'in' => 'success', 'return' => 'info', 'out' => 'gray', 'waste' => 'danger', default => 'warning',
                     }),
                 Tables\Columns\TextColumn::make('qty_base')->label('Perubahan')
                     ->formatStateUsing(function ($state, StockMovement $r) {

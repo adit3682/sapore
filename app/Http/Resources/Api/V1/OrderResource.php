@@ -17,10 +17,10 @@ class OrderResource extends JsonResource
             'order_type' => $this->order_type,
             'table_label' => $this->table_label,
             'items' => $this->items->map(fn ($i) => [
-                'id' => $i->id, // dipakai klien untuk retur (order_item_id)
+                'order_item_id' => $i->id, // dipakai klien untuk retur
                 'returned_qty' => $this->returnedQty($i->id),
                 'type' => $i->item_type,
-                'id' => $i->item_id,
+                'item_id' => $i->item_id, // id menu/paket pada katalog
                 'name' => $i->name,
                 'unit_price' => (string) $i->unit_price,
                 'qty' => (string) $i->qty,

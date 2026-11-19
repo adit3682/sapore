@@ -181,7 +181,7 @@ class ReceiptTest extends TestCase
             ->assertStatus(422)->assertJsonPath('message', fn ($m) => str_contains($m, 'melebihi'));
 
         // detail order memuat id item (untuk klien) dan struk memuat retur
-        $this->getJson("/api/v1/orders/{$order->uuid}")->assertOk()->assertJsonPath('items.0.id', $order->items[0]->id);
+        $this->getJson("/api/v1/orders/{$order->uuid}")->assertOk()->assertJsonPath('items.0.order_item_id', $order->items[0]->id);
         $this->getJson("/api/v1/orders/{$order->uuid}/receipt")->assertOk()->assertJsonPath('data.net_total', '276000.00');
     }
 

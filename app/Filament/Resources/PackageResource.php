@@ -87,6 +87,9 @@ class PackageResource extends Resource
                 Tables\Columns\ToggleColumn::make('is_active')->label('Aktif')
                     ->disabled(fn () => ! Access::can(auth()->user(), 'menus', 'update')),
             ])
+            ->filters([
+                Tables\Filters\TernaryFilter::make('is_active')->label('Aktif'),
+            ])
             ->actions([Tables\Actions\EditAction::make()])
             ->defaultSort('code');
     }

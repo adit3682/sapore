@@ -48,6 +48,9 @@ class SupplierResource extends Resource
                 Tables\Columns\TextColumn::make('phone')->label('Telepon'),
                 Tables\Columns\IconColumn::make('is_active')->label('Aktif')->boolean(),
             ])
+            ->filters([
+                Tables\Filters\TernaryFilter::make('is_active')->label('Aktif'),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

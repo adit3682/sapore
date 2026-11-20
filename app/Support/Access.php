@@ -91,11 +91,14 @@ final class Access
         if (! $user) {
             return -1;
         }
+        if (self::roleOf($user) === Role::Owner) {
+            return null;
+        }
         if ($user->branch_id) {
             return (int) $user->branch_id;
         }
 
-        return self::roleOf($user) === Role::Owner ? null : -1;
+        return -1;
     }
 
     public static function isCentral(?User $user): bool
@@ -108,7 +111,7 @@ final class Access
     {
         $scope = self::branchScope($user);
 
-        return Branch::where('is_active', true)
+        return Branch::query()
             ->when($scope !== null, fn ($q) => $q->whereKey($scope))
             ->orderBy('name')->pluck('name', 'id');
     }

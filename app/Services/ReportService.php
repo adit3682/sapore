@@ -36,7 +36,7 @@ class ReportService
      */
     public function salesDaily(Carbon $from, Carbon $to, ?int $branchId): array
     {
-        $paid = fn () => DB::table('orders')->where('orders.status', 'paid')
+        $paid = fn () => DB::table('orders')->whereIn('orders.status', ['paid', 'returned'])
             ->whereBetween('orders.paid_at', [$from, $to])
             ->when($branchId, fn ($q, $b) => $q->where('orders.branch_id', $b));
 
@@ -120,7 +120,7 @@ class ReportService
         $target = $this->foodCostTarget();
 
         $sold = DB::table('order_items')->join('orders', 'orders.id', '=', 'order_items.order_id')
-            ->where('orders.status', 'paid')->whereBetween('orders.paid_at', [$from, $to])
+            ->whereIn('orders.status', ['paid', 'returned'])->whereBetween('orders.paid_at', [$from, $to])
             ->when($branchId, fn ($q, $b) => $q->where('orders.branch_id', $b))
             ->selectRaw('order_items.item_type, order_items.item_id, MAX(order_items.name) as name, SUM(order_items.qty) as qty, SUM(order_items.line_total) as revenue, SUM(order_items.unit_cost * order_items.qty) as cost')
             ->groupBy('order_items.item_type', 'order_items.item_id')->get()

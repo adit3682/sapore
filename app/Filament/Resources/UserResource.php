@@ -116,6 +116,8 @@ class UserResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('role')->label('Peran')->options(self::ROLE_LABELS),
+                Tables\Filters\SelectFilter::make('branch_id')->label('Cabang')
+                    ->options(fn () => Access::branchOptions(auth()->user())),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Aktif'),
             ])
             ->actions([

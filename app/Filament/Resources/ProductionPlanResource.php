@@ -93,9 +93,7 @@ class ProductionPlanResource extends Resource
                 Tables\Columns\TextColumn::make('items_count')->label('Item')->suffix(' item'),
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->formatStateUsing(fn ($state) => self::statusLabel($state))
-                    ->color(fn ($state) => match (self::statusValue($state)) {
-                        'confirmed' => 'success', 'done' => 'gray', default => 'warning',
-                    }),
+                    ->color(fn ($state) => self::statusColor($state)),
                 Tables\Columns\TextColumn::make('creator.name')->label('Dibuat oleh')->placeholder('-'),
             ])
             ->filters([
@@ -129,5 +127,14 @@ class ProductionPlanResource extends Resource
     public static function statusLabel(mixed $state): string
     {
         return ucfirst(self::statusValue($state));
+    }
+
+    public static function statusColor(mixed $state): string
+    {
+        return match (self::statusValue($state)) {
+            'confirmed' => 'success',
+            'done' => 'info',
+            default => 'gray',
+        };
     }
 }

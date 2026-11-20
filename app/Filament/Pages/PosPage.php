@@ -84,7 +84,7 @@ class PosPage extends Page
     /** Pilihan cabang untuk akun pusat; kosong untuk akun cabang (terkunci). */
     public function branchChoices(): array
     {
-        return Access::isCentral(auth()->user()) ? Branch::where('is_active', true)->orderBy('name')->pluck('name', 'id')->all() : [];
+        return Access::isCentral(auth()->user()) ? Branch::query()->orderBy('name')->pluck('name', 'id')->all() : [];
     }
 
     /** @return array<int, array{key: string, label: string}> */

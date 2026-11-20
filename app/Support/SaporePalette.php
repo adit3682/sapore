@@ -24,7 +24,7 @@ class SaporePalette
         return [
             'primary' => self::shades(self::TERRACOTTA),
             'info' => self::shades(self::NAVY),
-            'success' => self::shades('#3f7a55'), // hijau sage yang lebih tua agar teks tetap terbaca
+            'success' => self::shades(self::SAGE),
             'warning' => self::shades('#c98a3c'),
             'danger' => self::shades('#b94a48'),
             'gray' => self::gray(),

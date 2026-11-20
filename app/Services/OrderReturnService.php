@@ -91,7 +91,7 @@ class OrderReturnService
 
         return DB::transaction(function () use ($order, $payload, $actor, $mode, $reason) {
             $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
-            if ($order->status !== OrderStatus::Paid) {
+            if (! in_array($order->status, [OrderStatus::Paid, OrderStatus::Returned], true)) {
                 throw new RuntimeException('Retur hanya untuk order yang sudah dibayar.');
             }
 
@@ -189,6 +189,7 @@ class OrderReturnService
             $this->moveStock($order, $return, $lines, $mode, $actor);
 
             $order->update(['refunded_total' => bcadd((string) $order->refunded_total, $total, 2)]);
+            $order->update(['status' => OrderStatus::Returned]);
 
             return $return->load('items');
         });

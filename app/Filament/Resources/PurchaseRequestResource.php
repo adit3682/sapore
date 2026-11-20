@@ -8,6 +8,7 @@ use App\Enums\PurchaseRequestStatus;
 use App\Filament\Resources\PurchaseRequestResource\Pages;
 use App\Models\PurchaseRequest;
 use App\Services\RecipeCostService;
+use App\Support\Access;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
@@ -95,7 +96,11 @@ class PurchaseRequestResource extends Resource
                     ->formatStateUsing(fn ($state) => self::LABELS[self::statusValue($state)] ?? $state)
                     ->color(fn ($state) => self::statusColor($state)),
             ])
-            ->filters([Tables\Filters\SelectFilter::make('status')->options(self::LABELS)])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')->options(self::LABELS),
+                Tables\Filters\SelectFilter::make('branch_id')->label('Cabang')
+                    ->options(fn () => Access::branchOptions(auth()->user())),
+            ])
             ->actions([Tables\Actions\ViewAction::make()])
             ->defaultSort('id', 'desc');
     }

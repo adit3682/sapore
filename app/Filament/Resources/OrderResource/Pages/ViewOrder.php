@@ -48,7 +48,7 @@ class ViewOrder extends ViewRecord
     private function receiptAction(): Actions\Action
     {
         return Actions\Action::make('receipt')->label('Cetak Struk')->icon('heroicon-o-printer')->color('gray')
-            ->visible(fn () => $this->record->status === OrderStatus::Paid)
+            ->visible(fn () => in_array($this->record->status, [OrderStatus::Paid, OrderStatus::Returned], true))
             ->url(fn () => ReceiptPage::getUrl(['type' => 'order', 'id' => $this->record->id, 'print' => 1]), shouldOpenInNewTab: true);
     }
 
@@ -57,7 +57,7 @@ class ViewOrder extends ViewRecord
     {
         return Actions\Action::make('return')->label('Retur')->icon('heroicon-o-arrow-uturn-left')->color('warning')
             ->visible(fn () => Access::can(auth()->user(), 'orders', 'refund')
-                && $this->record->status === OrderStatus::Paid
+                && in_array($this->record->status, [OrderStatus::Paid, OrderStatus::Returned], true)
                 && collect(app(OrderReturnService::class)->remaining($this->record))->contains(fn ($query) => bccomp($query, '0', 2) > 0))
             ->modalHeading('Retur Order')
             ->modalDescription('Isi jumlah yang diretur per item. Pajak dan service dikembalikan proporsional.')

@@ -39,9 +39,7 @@ class TodayPlansWidget extends TableWidget
                 Tables\Columns\TextColumn::make('items_count')->label('Item')->suffix(' item'),
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->formatStateUsing(fn ($state) => ucfirst($state instanceof PlanStatus ? $state->value : (string) $state))
-                    ->color(fn ($state) => match ($state instanceof PlanStatus ? $state->value : $state) {
-                        'confirmed' => 'success', 'done' => 'gray', default => 'warning',
-                    }),
+                    ->color(fn ($state) => ProductionPlanResource::statusColor($state)),
             ])
             ->actions([
                 Tables\Actions\Action::make('open')->label('Buka')

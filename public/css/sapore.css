@@ -1,9 +1,17 @@
 /*
  * Tema SAPORÉ untuk Filament v3 (mode terang saja; panel memakai ->darkMode(false)).
- * Palet dari Visual Brief: krem hangat + navy dalam + aksen terracotta, hindari putih murni.
- * Warna tombol/badge/aksen diatur lewat ->colors() di AdminPanelProvider (App\Support\SaporePalette);
- * file ini hanya untuk hal yang tidak bisa diatur lewat palet: sidebar navy, header tabel, kartu, login.
- * Bila setelah update Filament tampilan bergeser, periksa nama kelas .fi-* di bawah dengan Inspect Element.
+ * Palette:
+ * Navy Dark   #0f2341  → Sidebar, teks penting, header tabel
+ * Navy        #1a365d  → Primary brand, tombol sekunder
+ * Terracotta  #c26944  → Aksen utama, CTA, highlight (pakai sparingly)
+ * Sage        #78907e  → Status sukses / aman
+ * Warm Cream  #faf7f2  → Background utama halaman
+ * Card Cream  #fffdfa  → Background card / panel
+ * Text Dark   #232d37  → Body text
+ * Text Muted  #64707d  → Label, hint, secondary
+ *
+ * Prinsip: hindari pure white sebagai background utama.
+ * Terracotta hanya untuk aksen agar tetap elegan.
  */
 :root {
     --sp-navy-dark: #0f2341;
@@ -108,9 +116,9 @@ body.fi-body,
     color: rgba(250, 247, 242, 0.6) !important;
 }
 
-/* item aktif: panel navy lebih terang + garis terracotta di kiri (seperti mockup) */
-.fi-sidebar-item-active > .fi-sidebar-item-button,
-.fi-sidebar-item.fi-active > .fi-sidebar-item-button {
+/* item aktif */
+.fi-sidebar-item-active>.fi-sidebar-item-button,
+.fi-sidebar-item.fi-active>.fi-sidebar-item-button {
     background-color: var(--sp-navy) !important;
     box-shadow: inset 3px 0 0 var(--sp-terracotta);
     color: #ffffff !important;
@@ -128,7 +136,7 @@ body.fi-body,
 }
 
 /* ---------- Topbar ---------- */
-.fi-topbar > nav {
+.fi-topbar>nav {
     background-color: var(--sp-card) !important;
     box-shadow: 0 1px 0 var(--sp-line);
 }
@@ -146,28 +154,44 @@ body.fi-body,
     }
 }
 
-/* ---------- Logo: warna teks menurut lokasi ---------- */
-.sp-logo-text { fill: var(--sp-navy-dark); }
-.sp-logo-sub { fill: var(--sp-muted); }
-.sp-logo-disc { fill: var(--sp-navy-dark); }
+/* ---------- Logo ---------- */
+.sp-logo-text {
+    fill: var(--sp-navy-dark);
+}
+
+.sp-logo-sub {
+    fill: var(--sp-muted);
+}
+
+.sp-logo-disc {
+    fill: var(--sp-navy-dark);
+}
 
 .fi-sidebar .sp-logo-text,
-.fi-simple-layout .sp-logo-text { fill: var(--sp-cream); }
+.fi-simple-layout .sp-logo-text {
+    fill: var(--sp-cream);
+}
+
 .fi-sidebar .sp-logo-sub,
-.fi-simple-layout .sp-logo-sub { fill: #c9c2b6; }
+.fi-simple-layout .sp-logo-sub {
+    fill: #c9c2b6;
+}
+
 .fi-sidebar .sp-logo-disc,
-.fi-simple-layout .sp-logo-disc { fill: var(--sp-navy); }
+.fi-simple-layout .sp-logo-disc {
+    fill: var(--sp-navy);
+}
 
-/* ---------- Tabel: header navy + baris selang-seling krem ---------- */
-.fi-ta-table > thead {
+/* ---------- Tabel ---------- */
+.fi-ta-table>thead {
     background-color: var(--sp-navy-dark) !important;
 }
 
-.fi-ta-table > thead > tr {
+.fi-ta-table>thead>tr {
     background-color: var(--sp-navy-dark) !important;
 }
 
-.fi-ta-table > thead th,
+.fi-ta-table>thead th,
 .fi-ta-header-cell,
 .fi-ta-header-cell-label,
 .fi-ta-header-cell button,
@@ -179,27 +203,73 @@ body.fi-body,
     color: rgba(255, 255, 255, 0.7) !important;
 }
 
-.fi-ta-table > tbody > tr:nth-child(even) {
-    background-color: rgba(239, 234, 227, 0.55);
+/* baris genap – cream yang sedikit lebih dalam */
+.fi-ta-table>tbody>tr:nth-child(even)>td {
+    background-color: #f3eee6 !important;
 }
 
-.fi-ta-table > tbody > tr:hover {
-    background-color: rgba(194, 105, 68, 0.07);
+.fi-ta-table>tbody>tr:hover>td {
+    background-color: rgba(194, 105, 68, 0.07) !important;
 }
 
 .fi-ta-text-item-label {
     color: var(--sp-text);
 }
 
-/* ---------- Kartu statistik dashboard: aksen warna di kiri ---------- */
+/* ---------- Badge status stok ---------- */
+/* Kritis */
+.fi-badge.fi-color-danger {
+    background-color: #b94a48 !important;
+    color: #ffffff !important;
+}
+
+/* Rendah */
+.fi-badge.fi-color-warning {
+    background-color: #c98a3c !important;
+    color: #ffffff !important;
+}
+
+/* Aman */
+.fi-badge.fi-color-success {
+    background-color: var(--sp-sage) !important;
+    color: #ffffff !important;
+}
+
+.fi-badge.fi-color-gray {
+    background-color: var(--sp-muted) !important;
+    color: #ffffff !important;
+}
+
+.fi-badge.fi-color-info {
+    background-color: var(--sp-navy) !important;
+    color: #ffffff !important;
+}
+
+.fi-badge.fi-color-danger svg,
+.fi-badge.fi-color-warning svg,
+.fi-badge.fi-color-success svg,
+.fi-badge.fi-color-gray svg,
+.fi-badge.fi-color-info svg {
+    color: inherit !important;
+}
+
+/* ---------- Kartu statistik (termasuk panel Stok Menipis) ---------- */
 .fi-wi-stats-overview-stat {
     border-left: 4px solid var(--sp-terracotta);
     overflow: hidden;
 }
 
-.fi-wi-stats-overview-stat:nth-child(2) { border-left-color: var(--sp-sage); }
-.fi-wi-stats-overview-stat:nth-child(3) { border-left-color: var(--sp-terracotta); }
-.fi-wi-stats-overview-stat:nth-child(4) { border-left-color: var(--sp-navy); }
+.fi-wi-stats-overview-stat:nth-child(2) {
+    border-left-color: var(--sp-sage);
+}
+
+.fi-wi-stats-overview-stat:nth-child(3) {
+    border-left-color: var(--sp-terracotta);
+}
+
+.fi-wi-stats-overview-stat:nth-child(4) {
+    border-left-color: var(--sp-navy);
+}
 
 .fi-wi-stats-overview-stat-value {
     font-family: var(--sp-serif);
@@ -219,7 +289,7 @@ body.fi-body,
     border-radius: 10px;
 }
 
-/* ---------- Halaman login: latar navy, kartu krem ---------- */
+/* ---------- Halaman login ---------- */
 .fi-simple-layout {
     background: radial-gradient(1200px 600px at 20% -10%, #1a365d 0%, #0f2341 55%, #0a182d 100%);
 }
@@ -239,13 +309,15 @@ body.fi-body,
     height: 3rem !important;
 }
 
-/* ---------- Cetak (laporan): hilangkan sidebar & topbar ---------- */
+/* ---------- Cetak ---------- */
 @media print {
+
     .fi-sidebar,
     .fi-topbar,
     .fi-header-actions-ctn {
         display: none !important;
     }
+
     body.fi-body,
     .fi-main-ctn {
         background: #ffffff;

@@ -108,7 +108,8 @@ class StockResource extends Resource
                         ), 'Penyesuaian dicatat');
                     }),
             ])
-            ->defaultSort('ingredient_id');
+            ->defaultSort('ingredient_id')
+            ->striped();
     }
 
     public static function getPages(): array

@@ -45,5 +45,6 @@ class SaporePaletteTest extends TestCase
             $this->assertCount(11, $colors[$role]);
         }
         $this->assertSame('194, 105, 68', $colors['primary'][600]);
+        $this->assertSame('120, 144, 126', $colors['success'][600]);
     }
 }

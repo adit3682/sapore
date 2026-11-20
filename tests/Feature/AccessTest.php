@@ -117,7 +117,7 @@ class AccessTest extends TestCase
 
         $owner = $this->u('owner');
         $owner->forceFill(['branch_id' => $branchId])->save();
-        $this->assertSame($branchId, Access::branchScope($owner->fresh()));        // Owner yang dikunci ke satu cabang
+        $this->assertNull(Access::branchScope($owner->fresh()));                  // Owner selalu pusat, tidak terikat cabang
     }
 
     public function test_resources_follow_the_matrix(): void

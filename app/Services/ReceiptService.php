@@ -24,7 +24,7 @@ class ReceiptService
     /** @return array<string, mixed> */
     public function build(Order $order): array
     {
-        if ($order->status !== OrderStatus::Paid) {
+        if (! in_array($order->status, [OrderStatus::Paid, OrderStatus::Returned], true)) {
             throw new RuntimeException('Struk hanya untuk order yang sudah dibayar.');
         }
         $order->loadMissing(['items', 'branch', 'cashier', 'returns']);

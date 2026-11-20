@@ -72,6 +72,9 @@ class BranchResource extends Resource
                 Tables\Columns\TextColumn::make('users_count')->label('Pengguna')->counts('users'),
                 Tables\Columns\IconColumn::make('is_active')->label('Aktif')->boolean(),
             ])
+            ->filters([
+                Tables\Filters\TernaryFilter::make('is_active')->label('Aktif'),
+            ])
             ->actions([Tables\Actions\EditAction::make()])
             ->defaultSort('name');
     }

@@ -9,8 +9,11 @@ use App\Enums\OrderStatus;
 use App\Filament\Resources\OrderResource\Pages;
 use App\Models\Order;
 use App\Services\RecipeCostService;
+use App\Services\OrderService;
+use App\Support\Access;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -38,7 +41,7 @@ class OrderResource extends Resource
         return false; // order dibuat dari Kasir
     }
 
-    private const STATUS = ['open' => 'Tersimpan', 'paid' => 'Dibayar', 'void' => 'Dibatalkan'];
+    private const STATUS = ['open' => 'Tersimpan', 'paid' => 'Dibayar', 'returned' => 'Retur', 'void' => 'Dibatalkan'];
 
     private const METHOD = ['cash' => 'Tunai', 'qris' => 'QRIS', 'card' => 'Kartu', 'transfer' => 'Transfer'];
 
@@ -50,7 +53,7 @@ class OrderResource extends Resource
     private static function statusColor(mixed $state): string
     {
         return match (self::statusValue($state)) {
-            'paid' => 'success', 'void' => 'gray', default => 'warning',
+            'paid' => 'success', 'returned' => 'danger', 'void' => 'danger', default => 'warning',
         };
     }
 
@@ -126,10 +129,40 @@ class OrderResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(self::STATUS),
-                Tables\Filters\Filter::make('today')->label('Hari ini')
-                    ->query(fn ($query) => $query->whereDate('created_at', today())),
+                Tables\Filters\SelectFilter::make('period')->label('Waktu')
+                    ->options([
+                        'today' => 'Hari ini',
+                        'yesterday' => 'Kemarin',
+                        '7_days' => '7 hari terakhir',
+                        '30_days' => '30 hari terakhir',
+                    ])
+                    ->query(function ($query, array $data) {
+                        return match ($data['value'] ?? null) {
+                            'today' => $query->whereBetween('created_at', [now()->startOfDay(), now()->endOfDay()]),
+                            'yesterday' => $query->whereBetween('created_at', [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()]),
+                            '7_days' => $query->whereBetween('created_at', [now()->subDays(6)->startOfDay(), now()->endOfDay()]),
+                            '30_days' => $query->whereBetween('created_at', [now()->subDays(29)->startOfDay(), now()->endOfDay()]),
+                            default => $query,
+                        };
+                    }),
             ])
-            ->actions([Tables\Actions\ViewAction::make()])
+            ->actions([
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\Action::make('void')->label('Batalkan')->icon('heroicon-o-x-circle')->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Batalkan Order')
+                    ->modalDescription('Order yang dibatalkan tidak lagi dianggap sebagai pesanan aktif.')
+                    ->visible(fn (Order $record) => Access::can(auth()->user(), 'orders', 'void')
+                        && $record->status === OrderStatus::Open)
+                    ->action(function (Order $record) {
+                        try {
+                            app(OrderService::class)->void($record);
+                            Notification::make()->success()->title('Order dibatalkan')->send();
+                        } catch (\Throwable $e) {
+                            Notification::make()->danger()->title('Gagal')->body($e->getMessage())->send();
+                        }
+                    }),
+            ])
             ->defaultSort('id', 'desc');
     }
 

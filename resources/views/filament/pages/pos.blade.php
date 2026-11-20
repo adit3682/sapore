@@ -71,7 +71,7 @@
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0">
-                <input type="text" class="sp-input" placeholder="Meja (mis. 07)" wire:model="tableLabel">
+                <input type="text" class="sp-input" placeholder="Nomor meja" wire:model="tableLabel">
                 <select class="sp-input" wire:model="orderType">
                     <option value="dine_in">Dine In</option>
                     <option value="take_away">Take Away</option>

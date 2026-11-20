@@ -80,8 +80,8 @@ class GoodsReceiptResource extends Resource
                                 $query = $get('qty');
                                 $p = $get('unit_price');
 
-                                return is_numeric($query) && is_numeric($p)
-                                    ? RecipeCostService::rupiah(bcmul((string) $query, (string) $p, 2))
+                                return is_numeric($q) && is_numeric($p)
+                                    ? RecipeCostService::rupiah(bcmul((string) $q, (string) $p, 2))
                                     : '-';
                             })->columnSpan(2),
                     ])
@@ -141,6 +141,12 @@ class GoodsReceiptResource extends Resource
                 Tables\Columns\TextColumn::make('total_amount')->label('Total')
                     ->formatStateUsing(fn ($state) => RecipeCostService::rupiah($state)),
                 Tables\Columns\TextColumn::make('creator.name')->label('Oleh')->placeholder('-'),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('branch_id')->label('Cabang')
+                    ->options(fn () => Access::branchOptions(auth()->user())),
+                Tables\Filters\SelectFilter::make('supplier_id')->label('Supplier')
+                    ->options(fn () => Supplier::where('is_active', true)->orderBy('name')->pluck('name', 'id')),
             ])
             ->actions([Tables\Actions\ViewAction::make()])
             ->defaultSort('id', 'desc');

@@ -106,7 +106,11 @@ class StockOpnameResource extends Resource
                         'confirmed' => 'success', 'cancelled' => 'gray', default => 'warning',
                     }),
             ])
-            ->filters([Tables\Filters\SelectFilter::make('status')->options(self::LABELS)])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')->options(self::LABELS),
+                Tables\Filters\SelectFilter::make('branch_id')->label('Cabang')
+                    ->options(fn () => Access::branchOptions(auth()->user())),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make()->label('Lanjutkan hitung'),
                 Tables\Actions\ViewAction::make(),

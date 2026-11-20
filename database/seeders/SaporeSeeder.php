@@ -14,6 +14,12 @@ class SaporeSeeder extends Seeder
 {
     public function run(): void
     {
+
+        if (app()->environment('production')) {
+        $this->command->error('SaporeSeeder hanya untuk pengembangan. Di produksi pakai: php artisan sapore:install');
+        return;
+    }
+
         $branch = Branch::firstOrCreate(['name' => 'Cabang Sudirman'], ['is_active' => true]);
 
         $units = [];

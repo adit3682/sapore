@@ -27,6 +27,7 @@
         .sp-totals div { display: flex; justify-content: space-between; padding: 2px 0; color: #64707d; }
         .sp-totals .total { color: #c26944; font-weight: 800; font-size: 20px; border-top: 1px solid #d9d2c7; margin-top: 6px; padding-top: 8px; }
         .sp-input { border: 1px solid #d9d2c7; background: #fff; border-radius: 8px; padding: 6px 10px; font-size: 13px; width: 100%; color: #232d37; }
+        select.sp-input { background-repeat: no-repeat; background-position: right 10px center; background-size: 16px 16px; padding-right: 30px; }
         .sp-btn { width: 100%; border: 0; border-radius: 10px; padding: 12px; font-weight: 700; cursor: pointer; font-size: 14px; }
         .sp-btn.pay { background: #c26944; color: #fff; }
         .sp-btn.save { background: #1a365d; color: #fff; }

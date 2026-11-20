@@ -1,0 +1,59 @@
+diff --git a/app/Http/Controllers/Api/V1/OrderController.php b/app/Http/Controllers/Api/V1/OrderController.php
+index 8f6db96..e95d3c9 100644
+--- a/app/Http/Controllers/Api/V1/OrderController.php
++++ b/app/Http/Controllers/Api/V1/OrderController.php
+@@ -120,6 +120,15 @@ public function receipt(OrderActionRequest $request, string $uuid, ReceiptServic
+         }
+     }
+ 
++    /** Data struk retur (kertas thermal). */
++    public function returnReceipt(OrderActionRequest $request, string $uuid, string $returnUuid, ReceiptService $receipts): JsonResponse
++    {
++        $return = $this->find($request, $uuid)->returns->firstWhere('uuid', $returnUuid);
++        abort_if($return === null, 404);
++
++        return response()->json(['data' => $receipts->buildReturn($return)]);
++    }
++
+     private function find(Request $request, string $uuid): Order
+     {
+         return Order::with(['items', 'returns.items'])->where('uuid', $uuid)
+diff --git a/routes/api.php b/routes/api.php
+index 4162034..559eb15 100644
+--- a/routes/api.php
++++ b/routes/api.php
+@@ -30,6 +30,7 @@
+             Route::post('orders/{uuid}/void', [OrderController::class, 'void']);
+             Route::post('orders/{uuid}/returns', [OrderController::class, 'refund']);
+             Route::get('orders/{uuid}/receipt', [OrderController::class, 'receipt']);
++            Route::get('orders/{uuid}/returns/{returnUuid}/receipt', [OrderController::class, 'returnReceipt']);
+         });
+     });
+ });
+diff --git a/tests/Feature/ReceiptTest.php b/tests/Feature/ReceiptTest.php
+--- a/tests/Feature/ReceiptTest.php
++++ b/tests/Feature/ReceiptTest.php
+@@ -185,6 +185,23 @@
+         $this->getJson("/api/v1/orders/{$order->uuid}/receipt")->assertOk()->assertJsonPath('data.net_total', '276000.00');
+     }
+ 
++    public function test_api_return_receipt_endpoint(): void
++    {
++        $order = $this->paidOrder();
++        Sanctum::actingAs($this->manager);
++        $this->postJson("/api/v1/orders/{$order->uuid}/returns", $this->returnPayload($order))->assertCreated();
++        $ret = OrderReturn::first();
++
++        Sanctum::actingAs($this->cashier);
++        $this->getJson("/api/v1/orders/{$order->uuid}/returns/{$ret->uuid}/receipt")
++            ->assertOk()
++            ->assertJsonPath('data.kind', 'return')
++            ->assertJsonPath('data.number', $ret->number)
++            ->assertJsonPath('data.total', '184000.00');
++
++        $this->getJson("/api/v1/orders/{$order->uuid}/returns/00000000-0000-0000-0000-000000000000/receipt")->assertNotFound();
++    }
++
+     public function test_api_pay_endpoint_still_works(): void
+     {
+         // regresi: OrderController::find() sebelumnya memakai tipe parameter yang salah untuk /pay

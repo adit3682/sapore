@@ -30,6 +30,7 @@ Route::prefix('v1')->group(function () {
             Route::post('orders/{uuid}/void', [OrderController::class, 'void']);
             Route::post('orders/{uuid}/returns', [OrderController::class, 'refund']);
             Route::get('orders/{uuid}/receipt', [OrderController::class, 'receipt']);
+            Route::get('orders/{uuid}/returns/{returnUuid}/receipt', [OrderController::class, 'returnReceipt']);
         });
     });
 });

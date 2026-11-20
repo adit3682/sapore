@@ -56,7 +56,7 @@ class OrderResource extends Resource
 
     public static function infolist(Infolist $infolist): Infolist
     {
-        $rp = fn ($v) => RecipeCostService::rupiah($v);
+        $rp = fn ($state) => RecipeCostService::rupiah($state);
 
         return $infolist->schema([
             Infolists\Components\Section::make()->schema([

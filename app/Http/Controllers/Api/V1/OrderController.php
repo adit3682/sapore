@@ -120,6 +120,15 @@ class OrderController extends Controller
         }
     }
 
+    /** Data struk retur (kertas thermal). */
+    public function returnReceipt(OrderActionRequest $request, string $uuid, string $returnUuid, ReceiptService $receipts): JsonResponse
+    {
+        $return = $this->find($request, $uuid)->returns->firstWhere('uuid', $returnUuid);
+        abort_if($return === null, 404);
+
+        return response()->json(['data' => $receipts->buildReturn($return)]);
+    }
+
     private function find(Request $request, string $uuid): Order
     {
         return Order::with(['items', 'returns.items'])->where('uuid', $uuid)

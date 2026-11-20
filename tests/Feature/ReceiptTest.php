@@ -185,6 +185,23 @@ class ReceiptTest extends TestCase
         $this->getJson("/api/v1/orders/{$order->uuid}/receipt")->assertOk()->assertJsonPath('data.net_total', '276000.00');
     }
 
+    public function test_api_return_receipt_endpoint(): void
+    {
+        $order = $this->paidOrder();
+        Sanctum::actingAs($this->manager);
+        $this->postJson("/api/v1/orders/{$order->uuid}/returns", $this->returnPayload($order))->assertCreated();
+        $ret = OrderReturn::first();
+
+        Sanctum::actingAs($this->cashier);
+        $this->getJson("/api/v1/orders/{$order->uuid}/returns/{$ret->uuid}/receipt")
+            ->assertOk()
+            ->assertJsonPath('data.kind', 'return')
+            ->assertJsonPath('data.number', $ret->number)
+            ->assertJsonPath('data.total', '184000.00');
+
+        $this->getJson("/api/v1/orders/{$order->uuid}/returns/00000000-0000-0000-0000-000000000000/receipt")->assertNotFound();
+    }
+
     public function test_api_pay_endpoint_still_works(): void
     {
         // regresi: OrderController::find() sebelumnya memakai tipe parameter yang salah untuk /pay

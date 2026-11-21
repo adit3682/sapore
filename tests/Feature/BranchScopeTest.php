@@ -87,11 +87,23 @@ class BranchScopeTest extends TestCase
     public function test_stock_rows_are_scoped(): void
     {
         $perBranch = Ingredient::count();
+        $this->receipt($this->a);
+        $this->receipt($this->b);
 
         $this->actingAs($this->managerA);
         $this->assertSame($perBranch, StockResource::getEloquentQuery()->count());
         $this->actingAs($this->owner);
         $this->assertSame($perBranch * 2, StockResource::getEloquentQuery()->count());
+
+        $stocks = StockResource::getEloquentQuery()->get();
+        foreach ($stocks as $stock) {
+            $this->assertContains($stock->branch_id, [$this->a->id, $this->b->id]);
+        }
+
+        $pairs = $stocks->map(
+            fn ($stock) => $stock->ingredient_id.':'.$stock->branch_id
+        );
+        $this->assertCount($pairs->unique()->count(), $pairs);
     }
 
     public function test_orders_plans_and_opnames_are_scoped(): void

@@ -77,7 +77,7 @@ class GoodsReceiptResource extends Resource
                             ->minValue(0)->prefix('Rp')->live(onBlur: true)->columnSpan(3),
                         Forms\Components\Placeholder::make('subtotal')->label('Subtotal')
                             ->content(function (Get $get) {
-                                $query = $get('qty');
+                                $q = $get('qty');
                                 $p = $get('unit_price');
 
                                 return is_numeric($q) && is_numeric($p)

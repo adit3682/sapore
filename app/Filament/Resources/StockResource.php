@@ -50,6 +50,9 @@ class StockResource extends Resource
                 Tables\Columns\TextColumn::make('ingredient.code')->label('Kode')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('ingredient.name')->label('Nama Bahan')->searchable(),
                 Tables\Columns\TextColumn::make('ingredient.category.name')->label('Kategori')->placeholder('-'),
+                Tables\Columns\TextColumn::make('branch.name')->label('Cabang')
+                    ->visible(fn () => Access::branchScope(auth()->user()) === null)
+                    ->badge(),
                 Tables\Columns\TextColumn::make('quantity')->label('Stok')->numeric(decimalPlaces: 2)->sortable()
                     ->suffix(fn (Stock $r) => ' '.$r->ingredient->baseUnit?->symbol),
                 Tables\Columns\TextColumn::make('ingredient.min_stock')->label('Min')->numeric(decimalPlaces: 2)
@@ -82,6 +85,8 @@ class StockResource extends Resource
             ->actions([
                 Tables\Actions\Action::make('waste')->visible(fn () => Access::can(auth()->user(), 'stock', 'waste'))->label('Waste')->icon('heroicon-o-trash')->color('danger')
                     ->form(fn (Stock $record) => [
+                        Forms\Components\Placeholder::make('branch_name')->label('Cabang')
+                            ->content($record->branch?->name ?? '-'),
                         Forms\Components\TextInput::make('qty')->label('Jumlah terbuang')->numeric()->required()->minValue(0.0001),
                         Forms\Components\Select::make('unit_id')->label('Satuan')->required()
                             ->options(fn () => Unit::orderBy('symbol')->pluck('symbol', 'id'))
@@ -95,6 +100,8 @@ class StockResource extends Resource
                     }),
                 Tables\Actions\Action::make('adjust')->visible(fn () => Access::can(auth()->user(), 'stock', 'adjust'))->label('Penyesuaian')->icon('heroicon-o-adjustments-horizontal')
                     ->form(fn (Stock $record) => [
+                        Forms\Components\Placeholder::make('branch_name')->label('Cabang')
+                            ->content($record->branch?->name ?? '-'),
                         Forms\Components\TextInput::make('delta')->label('Perubahan stok (+ / -)')->numeric()->required()
                             ->helperText('Positif menambah, negatif mengurangi. Untuk hitung fisik massal gunakan Stock Opname.'),
                         Forms\Components\Select::make('unit_id')->label('Satuan')->required()

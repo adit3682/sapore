@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\BranchResource\Pages;
 use App\Filament\Support\ChecksAccess;
 use App\Models\Branch;
+use App\Services\SettingsService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -46,6 +47,14 @@ class BranchResource extends Resource
             Forms\Components\TextInput::make('name')->label('Nama cabang')->required()->maxLength(255),
             Forms\Components\TextInput::make('phone')->label('Telepon')->tel()->maxLength(30),
             Forms\Components\Textarea::make('address')->label('Alamat')->rows(2),
+            Forms\Components\TextInput::make('tax_rate')->label('Pajak cabang')
+                ->numeric()->minValue(0)->maxValue(100)->step(0.01)->suffix('%')
+                ->placeholder(fn () => 'Ikut umum ('.app(SettingsService::class)->taxRate().'%)')
+                ->helperText('Kosongkan untuk mengikuti Pengaturan Usaha. Hanya berlaku untuk order baru.'),
+            Forms\Components\TextInput::make('service_rate')->label('Service charge cabang')
+                ->numeric()->minValue(0)->maxValue(100)->step(0.01)->suffix('%')
+                ->placeholder(fn () => 'Ikut umum ('.app(SettingsService::class)->serviceRate().'%)')
+                ->helperText('Isi 0 bila cabang ini tidak memungut service charge.'),
             Forms\Components\Toggle::make('is_active')->label('Aktif')->default(true),
         ]);
     }
@@ -56,6 +65,10 @@ class BranchResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->label('Nama')->searchable(),
                 Tables\Columns\TextColumn::make('phone')->label('Telepon')->placeholder('-'),
+                Tables\Columns\TextColumn::make('tax')->label('Pajak')
+                    ->state(fn (Branch $r) => $r->tax_rate === null ? 'Umum' : rtrim(rtrim((string) $r->tax_rate, '0'), '.').'%'),
+                Tables\Columns\TextColumn::make('service')->label('Service')
+                    ->state(fn (Branch $r) => $r->service_rate === null ? 'Umum' : (rtrim(rtrim((string) $r->service_rate, '0'), '.') ?: '0').'%'),
                 Tables\Columns\TextColumn::make('users_count')->label('Pengguna')->counts('users'),
                 Tables\Columns\IconColumn::make('is_active')->label('Aktif')->boolean(),
             ])

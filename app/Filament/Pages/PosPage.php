@@ -132,12 +132,14 @@ class PosPage extends Page
     {
         $lines = array_values($this->cart);
         if (! $lines) {
-            return ['lines' => [], 'subtotal' => '0', 'tax_rate' => (string) config('sapore.tax_rate'), 'tax' => '0',
-                'service_rate' => (string) config('sapore.service_rate'), 'service' => '0', 'total' => '0'];
+            $settings = app(\App\Services\SettingsService::class);
+
+            return ['lines' => [], 'subtotal' => '0', 'tax_rate' => $settings->taxRate($this->branchId), 'tax' => '0',
+                'service_rate' => $settings->serviceRate($this->branchId), 'service' => '0', 'total' => '0'];
         }
 
         try {
-            return app(OrderService::class)->calculate($lines);
+            return app(OrderService::class)->calculate($lines, $this->branchId);
         } catch (\Throwable $e) {
             // item nonaktif / terhapus sejak ditambahkan: kosongkan yang bermasalah
             Notification::make()->warning()->title('Keranjang disesuaikan')->body($e->getMessage())->send();

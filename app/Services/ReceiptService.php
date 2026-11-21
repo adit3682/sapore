@@ -86,13 +86,15 @@ class ReceiptService
     /** @return array<string, mixed> */
     private function header(?\App\Models\Branch $branch): array
     {
+        $settings = app(SettingsService::class)->receipt();
+
         return [
-            'business' => (string) config('sapore.receipt.name', 'SAPORÉ'),
+            'business' => $settings['name'],
             'branch' => $branch?->name,
             'address' => $branch?->address,
             'phone' => $branch?->phone,
-            'footer' => (string) config('sapore.receipt.footer', 'Terima kasih atas kunjungan Anda'),
-            'paper' => (int) config('sapore.receipt.paper', 80) === 58 ? 58 : 80,
+            'footer' => $settings['footer'],
+            'paper' => $settings['paper'],
         ];
     }
 

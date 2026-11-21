@@ -49,9 +49,10 @@ class OrderService
      * Hitung baris, subtotal, pajak, service, dan total dari daftar [type, id, qty].
      *
      * @param  array<int, array{type: string, id: int|string, qty: int|float|string}>  $lines
+     * @param  int|null  $branchId  cabang transaksi (menentukan tarif pajak/service)
      * @return array{lines: array<int, array<string, mixed>>, subtotal: string, tax_rate: string, tax: string, service_rate: string, service: string, total: string}
      */
-    public function calculate(array $lines): array
+    public function calculate(array $lines, ?int $branchId = null): array
     {
         $menuIds = collect($lines)->where('type', 'menu')->pluck('id')->unique()->all();
         $packageIds = collect($lines)->where('type', 'package')->pluck('id')->unique()->all();
@@ -89,8 +90,10 @@ class OrderService
             $subtotal = bcadd($subtotal, $lineTotal, 2);
         }
 
-        $taxRate = (string) config('sapore.tax_rate', 10);
-        $serviceRate = (string) config('sapore.service_rate', 5);
+        // tarif: khusus cabang > pengaturan umum > bawaan .env (lihat SettingsService)
+        $settings = app(SettingsService::class);
+        $taxRate = $settings->taxRate($branchId);
+        $serviceRate = $settings->serviceRate($branchId);
         $tax = $this->roundRupiah(bcdiv(bcmul($subtotal, $taxRate, 4), '100', 4));
         $service = $this->roundRupiah(bcdiv(bcmul($subtotal, $serviceRate, 4), '100', 4));
 
@@ -129,7 +132,7 @@ class OrderService
             throw new InvalidArgumentException('Order harus berisi minimal satu item.');
         }
 
-        $calc = $this->calculate($lines);
+        $calc = $this->calculate($lines, $branchId);
 
         return DB::transaction(function () use ($header, $calc, $cashier, $branchId) {
             $order = Order::create([
@@ -153,7 +156,7 @@ class OrderService
         if (! $lines) {
             throw new InvalidArgumentException('Order harus berisi minimal satu item.');
         }
-        $calc = $this->calculate($lines);
+        $calc = $this->calculate($lines, $order->branch_id);
 
         return DB::transaction(function () use ($order, $calc, $header) {
             $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();

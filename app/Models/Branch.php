@@ -7,9 +7,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Branch extends Model
 {
-    protected $fillable = ['name', 'address', 'phone', 'is_active'];
+    protected $fillable = ['name', 'address', 'phone', 'tax_rate', 'service_rate', 'is_active'];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $casts = [
+        'is_active' => 'boolean',
+        'tax_rate' => 'decimal:2',
+        'service_rate' => 'decimal:2',
+    ];
 
     protected static function booted(): void
     {

@@ -27,7 +27,7 @@ class ReportService
 
     public function foodCostTarget(): string
     {
-        return (string) config('sapore.food_cost_target', 35);
+        return app(SettingsService::class)->foodCostTarget();
     }
 
     /**

@@ -25,6 +25,7 @@ final class Access
 
         return [
             'branches' => ['owner' => $crud],
+            'settings' => ['owner' => ['view', 'update']], // Pengaturan Usaha: tarif umum, target food cost, struk
             'users' => ['owner' => $crud, 'manager' => $crud], // manager dibatasi lagi oleh UserAdminService
             'master_data' => ['owner' => $crud, 'manager' => $crud, 'chef' => $r, 'inventory' => $crud],
             'recipes' => ['owner' => $crud, 'manager' => $crud, 'chef' => $crud],
